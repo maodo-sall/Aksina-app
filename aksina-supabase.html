@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aksina</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+  :root{
+    --orange:#E8431A;--orange2:#F97316;--gold:#FBBF24;
+    --navy:#1E3A5F;--blue:#2563EB;--green:#10B981;--red:#EF4444;--purple:#7C3AED;
+    --ink:#0F1720;--muted:#5B6B7A;--border:#E4E9EE;--panel:#FFFFFF;--page:#F7F8FA;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:'Inter',sans-serif;background:#0d1420;color:var(--ink);display:flex;justify-content:center;padding:0;}
+  .app{width:100%;max-width:430px;min-height:100vh;background:var(--page);display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.4);position:relative;}
+
+  @keyframes gpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .fadeUp{animation:fadeUp .35s ease both;}
+
+  /* SPLASH */
+  .splash{min-height:100vh;background:radial-gradient(circle at 50% 0%,#24406b,#0f1c33 55%,#0a1424);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;color:#fff;text-align:center;}
+  .splash-icon{width:78px;height:78px;border-radius:24px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 18px 40px rgba(232,67,26,.4);margin-bottom:18px;}
+  .splash-name{font-family:'Playfair Display',serif;font-size:46px;font-weight:900;background:linear-gradient(135deg,var(--orange),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+  .splash-tag{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:14px;}
+  .splash-desc{font-size:13px;color:rgba(255,255,255,.65);max-width:280px;line-height:1.7;margin-bottom:44px;}
+  .splash-btn{width:100%;max-width:280px;background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;font-size:15px;font-weight:700;padding:16px 28px;border-radius:30px;cursor:pointer;box-shadow:0 10px 26px rgba(232,67,26,.45);}
+
+  /* ROLE PICK */
+  .rolepick{min-height:100vh;background:linear-gradient(180deg,#0f1c33,#141d2c 30%,var(--page) 30%);padding:20px 20px 40px;}
+  .rp-hdr{color:#fff;text-align:center;padding:20px 0 26px;}
+  .rp-hdr .t{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;}
+  .rp-hdr .s{font-size:12px;color:rgba(255,255,255,.6);margin-top:4px;}
+  .role-card{background:#fff;border-radius:20px;padding:20px;margin-bottom:14px;cursor:pointer;box-shadow:0 10px 30px rgba(15,23,32,.08);border:2px solid transparent;transition:.15s;display:flex;align-items:center;gap:16px;}
+  .role-card:active{transform:scale(.98);}
+  .role-card .ic{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+  .role-card.rc-client .ic{background:linear-gradient(135deg,#DBEAFE,#BFDBFE);}
+  .role-card.rc-vendeur .ic{background:linear-gradient(135deg,#FEF3C7,#FDE68A);}
+  .role-card.rc-livreur .ic{background:linear-gradient(135deg,#DCFCE7,#BBF7D0);}
+  .role-card .rt{font-size:15px;font-weight:800;color:var(--ink);}
+  .role-card .rd{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .role-card .arrow{margin-left:auto;color:var(--orange);font-size:18px;}
+
+  /* ONBOARDING */
+  .onb-form{min-height:100vh;background:var(--page);padding:0;}
+  .onb-hero{background:linear-gradient(135deg,var(--navy),var(--blue));padding:40px 24px 30px;color:#fff;text-align:center;}
+  .onb-hero .oi{font-size:34px;margin-bottom:8px;}
+  .onb-hero .ot{font-family:'Playfair Display',serif;font-size:19px;font-weight:800;}
+  .onb-body{padding:24px 22px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--ink);}
+  .field input{width:100%;padding:13px 15px;border:1.5px solid var(--border);border-radius:12px;font-size:14.5px;font-family:inherit;background:#fff;}
+  .field input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,67,26,.1);}
+  .btn-primary{width:100%;background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;padding:15px;border-radius:14px;font-weight:800;font-size:14.5px;cursor:pointer;box-shadow:0 10px 24px rgba(232,67,26,.3);}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+  .btn-ghost{width:100%;background:none;border:none;color:var(--muted);padding:13px;font-weight:600;font-size:13px;cursor:pointer;}
+
+  /* HEADER */
+  .hdr{background:linear-gradient(135deg,var(--navy),var(--blue));padding:16px 18px 14px;color:#fff;flex-shrink:0;position:relative;overflow:hidden;}
+  .hdr::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(232,67,26,.35),transparent 70%);}
+  .hdr-row{display:flex;justify-content:space-between;align-items:center;position:relative;}
+  .logo{font-family:'Playfair Display',serif;font-weight:900;font-size:21px;}
+  .role-badge{font-size:10.5px;background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.15);}
+  .geo-line{display:flex;align-items:center;gap:6px;margin-top:9px;position:relative;}
+  .gdot{width:7px;height:7px;border-radius:50%;background:#4ADE80;animation:gpulse 1.6s ease-in-out infinite;flex-shrink:0;}
+  .geo-txt{font-size:11px;font-weight:700;color:#BBF7D0;}
+  .geo-sub{font-size:10px;color:rgba(255,255,255,.5);}
+
+  .main{flex:1;overflow-y:auto;padding:16px 16px 92px;}
+
+  /* GENERIC CARDS */
+  .sbar{display:flex;gap:8px;margin-bottom:6px;background:#fff;border-radius:14px;padding:4px;box-shadow:0 4px 14px rgba(15,23,32,.06);border:1px solid var(--border);}
+  .sbar input{flex:1;padding:11px 12px;border:none;font-size:14.5px;font-family:inherit;background:transparent;}
+  .sbar input:focus{outline:none;}
+  .sbar button{background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;padding:0 18px;border-radius:11px;font-weight:700;font-size:13px;cursor:pointer;}
+  .search-hint{font-size:10.5px;color:var(--muted);margin:8px 2px 16px;line-height:1.6;}
+  .sec-lbl{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 10px;}
+
+  .pcard{background:#fff;border-radius:16px;padding:14px 15px;margin-bottom:11px;box-shadow:0 3px 12px rgba(15,23,32,.05);border:1.5px solid var(--border);position:relative;}
+  .pcard.best{border-color:rgba(16,185,129,.45);background:linear-gradient(180deg,rgba(16,185,129,.04),#fff 40%);}
+  .pcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .pcard-name{font-size:14px;font-weight:800;}
+  .pcard-meta{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;}
+  .local-badge{font-size:10px;color:var(--muted);background:var(--page);border:1px solid var(--border);padding:2px 8px;border-radius:10px;}
+  .trust-badge{font-size:10px;font-weight:700;color:var(--green);background:rgba(16,185,129,.1);padding:2px 8px;border-radius:10px;}
+  .pcard-price{text-align:right;flex-shrink:0;}
+  .pcard-price .total{font-size:16px;font-weight:900;color:var(--orange);}
+  .pcard-price .detail{font-size:9.5px;color:var(--muted);margin-top:1px;}
+  .win-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--green),#059669);padding:4px 10px;border-radius:9px;margin-top:9px;}
+  .add-cart-btn{width:100%;margin-top:10px;background:var(--navy);border:none;color:#fff;padding:9px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;}
+
+  .empty{text-align:center;padding:44px 16px;color:var(--muted);font-size:13px;line-height:1.7;}
+  .empty .eic{font-size:34px;margin-bottom:10px;display:block;}
+
+  .seek-box{background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(124,58,237,.04));border:1.5px solid rgba(37,99,235,.2);border-radius:18px;padding:20px 18px;text-align:center;margin-top:6px;}
+  .seek-box .si{font-size:28px;margin-bottom:8px;}
+  .seek-box h4{font-family:'Playfair Display',serif;font-size:16px;margin:0 0 6px;}
+  .seek-box p{font-size:12px;color:var(--ink);opacity:.7;line-height:1.6;margin:0 0 16px;}
+
+  .req-card{background:#fff;border-radius:16px;padding:14px 15px;margin-bottom:12px;box-shadow:0 3px 12px rgba(15,23,32,.05);border:1px solid var(--border);}
+  .req-obj{font-size:14px;font-weight:800;margin-bottom:8px;}
+  .status-line{display:flex;align-items:center;gap:9px;background:var(--page);border-radius:11px;padding:10px 13px;}
+  .status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .status-dot.wait{background:var(--orange);animation:gpulse 1.5s ease-in-out infinite;}
+  .status-dot.mid{background:var(--blue);animation:gpulse 1.5s ease-in-out infinite;}
+  .status-dot.done{background:var(--green);}
+  .status-txt{font-size:12px;font-weight:700;flex:1;}
+  .status-time{font-size:10px;color:var(--muted);}
+  .resp-box{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(16,185,129,.03));border-radius:12px;padding:11px 13px;margin-top:10px;}
+  .resp-box .n{font-size:13px;font-weight:800;color:#059669;}
+  .resp-box .m{font-size:11.5px;color:var(--ink);opacity:.75;margin-top:3px;}
+
+  .tech-toggle{font-size:10.5px;color:var(--muted);text-align:center;margin-top:16px;cursor:pointer;}
+  .tech-box{background:var(--ink);color:#F4F6F8;border-radius:12px;padding:13px 14px;margin-top:10px;font-family:monospace;font-size:10px;line-height:1.8;display:none;}
+  .tech-box.show{display:block;}
+
+  .respond-form{display:flex;gap:7px;margin-top:11px;}
+  .respond-form input{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 10px;font-size:12.5px;font-family:inherit;background:var(--page);}
+  .respond-form input:focus{outline:none;border-color:var(--orange);}
+  .respond-btn{background:linear-gradient(135deg,var(--navy),var(--blue));border:none;color:#fff;border-radius:10px;padding:0 14px;font-size:12.5px;font-weight:800;cursor:pointer;}
+
+  .catalog-item{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:9px;box-shadow:0 2px 8px rgba(15,23,32,.04);}
+  .catalog-item .cn{font-size:13.5px;font-weight:700;}
+  .catalog-item .cz{font-size:10.5px;color:var(--muted);margin-top:2px;}
+  .catalog-item .cp{font-size:14px;font-weight:800;color:var(--orange);}
+  .add-form{display:flex;gap:7px;margin-bottom:18px;background:#fff;border-radius:14px;padding:5px;box-shadow:0 3px 12px rgba(15,23,32,.05);border:1px solid var(--border);}
+  .add-form input{flex:1;border:none;padding:9px 10px;font-size:13px;font-family:inherit;background:transparent;}
+  .add-form input:focus{outline:none;}
+  .add-form button{background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;border-radius:10px;padding:0 16px;font-weight:800;font-size:17px;cursor:pointer;}
+
+  .profile-box{text-align:center;padding:26px 0 10px;}
+  .profile-avatar{width:76px;height:76px;border-radius:24px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:900;margin:0 auto 14px;box-shadow:0 12px 26px rgba(232,67,26,.3);}
+  .profile-name{font-size:18px;font-weight:800;}
+  .profile-meta{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .profile-role-tag{display:inline-block;margin-top:10px;font-size:11px;font-weight:800;background:#fff;border:1px solid var(--border);padding:6px 14px;border-radius:20px;}
+  .profile-stats{display:flex;gap:10px;margin:22px 0;}
+  .pstat{flex:1;background:#fff;border-radius:14px;padding:14px 8px;text-align:center;border:1px solid var(--border);}
+  .pstat .num{font-size:20px;font-weight:900;color:var(--orange);}
+  .pstat .lbl{font-size:9.5px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.04em;}
+
+  /* DASHBOARD (vendeur) */
+  .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .kpi{background:#fff;border-radius:16px;padding:16px;border:1px solid var(--border);box-shadow:0 3px 12px rgba(15,23,32,.05);}
+  .kpi .kv{font-size:24px;font-weight:900;color:var(--navy);}
+  .kpi .kl{font-size:10.5px;color:var(--muted);margin-top:4px;}
+  .kpi.hot .kv{color:var(--orange);}
+
+  .home-hero{background:linear-gradient(135deg,var(--navy),var(--blue));border-radius:18px;padding:20px;color:#fff;margin-bottom:16px;}
+  .home-hero .ht{font-family:'Playfair Display',serif;font-size:17px;font-weight:800;margin-bottom:4px;}
+  .home-hero .hs{font-size:11.5px;color:rgba(255,255,255,.7);line-height:1.6;}
+
+  .b2b-box{text-align:center;padding:50px 20px;}
+  .b2b-box .bi2{font-size:40px;margin-bottom:14px;}
+  .b2b-box h3{font-family:'Playfair Display',serif;font-size:18px;margin:0 0 8px;}
+  .b2b-box p{font-size:12.5px;color:var(--muted);line-height:1.7;max-width:280px;margin:0 auto;}
+
+  /* NAV */
+  .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-top:1px solid var(--border);display:flex;padding:8px 0 10px;box-shadow:0 -6px 20px rgba(15,23,32,.06);}
+  .bi{flex:1;text-align:center;padding:5px 0;font-size:9.5px;color:var(--muted);cursor:pointer;font-weight:700;}
+  .bi .bic{font-size:19px;display:block;margin-bottom:3px;position:relative;}
+  .bi.on{color:var(--orange);}
+  .navbadge{position:absolute;top:-4px;right:calc(50% - 16px);background:var(--red);color:#fff;font-size:8px;font-weight:800;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="hdr"></div>
+  <div id="main"></div>
+  <div id="bnav" class="bnav" style="display:none;"></div>
+  <div id="aiFloatBtn" style="display:none;position:fixed;bottom:76px;right:20px;width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#60A5FA,#1E3A5F);box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:80;border:2px solid rgba(255,255,255,.4);">
+    <span style="font-size:11px;font-weight:900;color:#fff;">AKS</span>
+  </div>
+  <div id="aiPanel" style="display:none;position:fixed;bottom:76px;right:20px;left:20px;max-width:390px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.25);z-index:90;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#1E3A5F,#2563EB);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="color:#fff;font-size:12.5px;font-weight:800;">🤖 Assistant Aksina</div>
+      <button id="aiPanelClose" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div id="aiMessages" style="max-height:280px;overflow-y:auto;padding:12px 14px;font-size:12.5px;"></div>
+    <div style="display:flex;gap:7px;padding:10px 12px;border-top:1px solid #eee;">
+      <input id="aiInput" placeholder="Que cherchez-vous ?" style="flex:1;border:1.5px solid #E4E9EE;border-radius:9px;padding:9px 11px;font-size:12.5px;font-family:inherit;">
+      <button id="aiSend" style="background:#E8431A;border:none;color:#fff;border-radius:9px;padding:0 14px;font-weight:700;cursor:pointer;">→</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= SUPABASE ================= */
+const SUPABASE_URL = 'https://yoqxqdrffihtampxrmqc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_oiaGH8-CzwO6WCAc7gP4zA_YXW0qs_G';
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUserId = null;
+
+async function ensureAuth(){
+  try{
+    const { data: sessionData } = await sbClient.auth.getSession();
+    if(sessionData && sessionData.session){ currentUserId = sessionData.session.user.id; return true; }
+    const { data, error } = await sbClient.auth.signInAnonymously();
+    if(error) throw error;
+    currentUserId = data.user.id;
+    return true;
+  } catch(e){
+    console.error('Auth anonyme indisponible', e);
+    currentUserId = 'local-' + Math.random().toString(36).slice(2,10);
+    notifyOfflineMode('auth');
+    return false;
+  }
+}
+
+let offlineNoticeShown = false;
+function notifyOfflineMode(reason){
+  if(offlineNoticeShown) return;
+  offlineNoticeShown = true;
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:80px;left:16px;right:16px;max-width:398px;margin:0 auto;background:#8A5A0F;color:#fff;padding:11px 14px;border-radius:11px;font-size:11.5px;line-height:1.5;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,.3);';
+  toast.textContent = reason === 'auth'
+    ? "Connexion au compte impossible (l'inscription anonyme est peut-être désactivée dans Supabase → Authentication → Providers). Vos données ne seront pas partagées entre appareils tant que ce n'est pas activé."
+    : "La base de données n'a pas répondu correctement à une action. Vérifiez la connexion internet — certaines données peuvent ne pas être enregistrées.";
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 7000);
+}
+
+/* ---- lecture générique d'une table (retourne toutes les lignes, tri chronologique) ---- */
+async function fetchAll(table){
+  const { data, error } = await sbClient.from(table).select('*').order('created_at', { ascending: true });
+  if(error){ console.error(error); notifyOfflineMode('db'); return []; }
+  return data;
+}
+
+/* ---- mappers snake_case (base) <-> camelCase (application) ---- */
+function mapCatalogue(r){ return { id:r.id, vendeurNom:r.vendeur_nom, zone:r.zone, produit:r.produit, prix:Number(r.prix), createdAt:new Date(r.created_at).getTime() }; }
+function mapSolicitation(r){ return { id:r.id, clientNom:r.client_nom, zone:r.zone, produit:r.produit, quantite:r.quantite, status:r.status, reponse:r.reponse, createdAt:new Date(r.created_at).getTime() }; }
+function mapOrder(r){ return { id:r.id, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, produit:r.produit, prix:Number(r.prix), status:r.status, createdAt:new Date(r.created_at).getTime() }; }
+function mapLivraison(r){ return { id:r.id, produit:r.produit, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, prix:Number(r.prix), status:r.status, livreurNom:r.livreur_nom, createdAt:new Date(r.created_at).getTime() }; }
+function mapBazar(r){ return { id:r.id, titre:r.titre, prix:Number(r.prix), auteur:r.auteur, zone:r.zone, createdAt:new Date(r.created_at).getTime() }; }
+
+async function fetchCatalogueAll(){ return (await fetchAll('app_catalogue')).map(mapCatalogue); }
+async function insertCatalogue(item){ const { error } = await sbClient.from('app_catalogue').insert({ id:item.id, vendeur_nom:item.vendeurNom, zone:item.zone, produit:item.produit, prix:item.prix }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+
+async function fetchSolicitationsAll(){ return (await fetchAll('app_solicitations')).map(mapSolicitation); }
+async function insertSolicitation(item){ const { error } = await sbClient.from('app_solicitations').insert({ id:item.id, client_nom:item.clientNom, zone:item.zone, produit:item.produit, quantite:item.quantite, status:item.status }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function updateSolicitation(id, patch){
+  const dbPatch = {};
+  if('status' in patch) dbPatch.status = patch.status;
+  if('reponse' in patch) dbPatch.reponse = patch.reponse;
+  const { error } = await sbClient.from('app_solicitations').update(dbPatch).eq('id', id);
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
+
+async function fetchOrdersAll(){ return (await fetchAll('app_orders')).map(mapOrder); }
+async function insertOrder(item){ const { error } = await sbClient.from('app_orders').insert({ id:item.id, client_nom:item.clientNom, client_zone:item.clientZone, vendeur_nom:item.vendeurNom, vendeur_zone:item.vendeurZone, produit:item.produit, prix:item.prix, status:item.status }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+
+async function fetchLivraisonsAll(){ return (await fetchAll('app_livraisons')).map(mapLivraison); }
+async function insertLivraison(item){ const { error } = await sbClient.from('app_livraisons').insert({ id:item.id, produit:item.produit, client_nom:item.clientNom, client_zone:item.clientZone, vendeur_nom:item.vendeurNom, vendeur_zone:item.vendeurZone, prix:item.prix, status:item.status, livreur_nom:item.livreurNom||null }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function updateLivraison(id, patch){
+  const dbPatch = {};
+  if('status' in patch) dbPatch.status = patch.status;
+  if('livreurNom' in patch) dbPatch.livreur_nom = patch.livreurNom;
+  const { error } = await sbClient.from('app_livraisons').update(dbPatch).eq('id', id);
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
+
+async function fetchBazarAll(){ return (await fetchAll('app_bazar')).map(mapBazar); }
+async function insertBazar(item){ const { error } = await sbClient.from('app_bazar').insert({ id:item.id, titre:item.titre, prix:item.prix, auteur:item.auteur, zone:item.zone }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+
+/* ---- profils réels (une ligne par rôle, par utilisateur) ---- */
+async function getMyProfile(role){
+  const { data, error } = await sbClient.from('app_profiles').select('*').eq('user_id', currentUserId).eq('role', role).maybeSingle();
+  if(error){ console.error(error); return null; }
+  return data ? { nom:data.nom, zone:data.zone } : null;
+}
+async function saveMyProfile(role, nom, zone){
+  const { error } = await sbClient.from('app_profiles').upsert({ user_id:currentUserId, role, nom, zone }, { onConflict:'user_id,role' });
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
+async function getExistingRoles(){
+  const { data, error } = await sbClient.from('app_profiles').select('role').eq('user_id', currentUserId);
+  if(error) return [];
+  return data.map(r=>r.role);
+}
+async function getActiveRoleDb(){
+  const { data, error } = await sbClient.from('app_sessions').select('active_role').eq('user_id', currentUserId).maybeSingle();
+  if(error) return null;
+  return data ? data.active_role : null;
+}
+async function setActiveRoleDb(role){
+  const { error } = await sbClient.from('app_sessions').upsert({ user_id:currentUserId, active_role:role, updated_at:new Date().toISOString() });
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
+
+/* ---- panier (en mémoire, avant commande — pas besoin de persister) ---- */
+let cartItems = [];
+
+function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function money(n){ return Number(n).toLocaleString('fr-FR'); }
+
+let app = { role:null, profile:null, tab:'home' };
+
+/* ================= TEMPS RÉEL ================= */
+function setupRealtime(){
+  sbClient.channel('aksina-realtime')
+    .on('postgres_changes', { event:'*', schema:'public', table:'app_catalogue' }, () => { if(['home','search','produits','dashboard'].includes(app.tab)) renderApp(); })
+    .on('postgres_changes', { event:'*', schema:'public', table:'app_solicitations' }, () => { if(['home','delivery','commandes','dashboard','profile'].includes(app.tab)) renderApp(); })
+    .on('postgres_changes', { event:'*', schema:'public', table:'app_orders' }, () => { if(['commandes','dashboard','profile'].includes(app.tab)) renderApp(); })
+    .on('postgres_changes', { event:'*', schema:'public', table:'app_livraisons' }, () => { if(['delivery','mission','rhome','revenus','commandes','profile'].includes(app.tab)) renderApp(); })
+    .subscribe();
+}
+
+/* ================= BOOT ================= */
+async function boot(){
+  await ensureAuth();
+  setupRealtime();
+  const activeRole = await getActiveRoleDb();
+  if(!activeRole){ renderSplash(); return; }
+  const profile = await getMyProfile(activeRole);
+  if(!profile){ renderRolePick(activeRole); return; }
+  app.role = activeRole; app.profile = profile;
+  app.tab = activeRole === 'client' ? 'home' : (activeRole === 'vendeur' ? 'dashboard' : 'rhome');
+  renderApp();
+}
+
+/* ================= SPLASH ================= */
+function renderSplash(){
+  document.getElementById('hdr').innerHTML = '';
+  document.getElementById('bnav').style.display = 'none';
+  document.getElementById('main').style.padding = '0';
+  document.getElementById('main').innerHTML = `
+    <div class="splash">
+      <div class="splash-icon">🔒</div>
+      <div class="splash-name">Aksina</div>
+      <div class="splash-tag">One ID · One Trust · One Connect</div>
+      <div class="splash-desc">Le vendeur invisible qui trouve ce qu'il vous faut — ou qui trouve à qui vendre.</div>
+      <button class="splash-btn" id="startBtn">Commencer →</button>
+    </div>`;
+  document.getElementById('startBtn').addEventListener('click', () => renderRolePick());
+}
+
+/* ================= ROLE PICK / ONBOARDING ================= */
+function renderRolePick(preselect){
+  document.getElementById('hdr').innerHTML = '';
+  document.getElementById('bnav').style.display = 'none';
+  const m = document.getElementById('main');
+  m.style.padding = '0';
+
+  if(!preselect){
+    m.innerHTML = `
+      <div class="rolepick">
+        <div class="rp-hdr"><div class="t">Comment utilisez-vous Aksina ?</div><div class="s">Vous pourrez changer à tout moment</div></div>
+        <div class="role-card rc-client fadeUp" id="pickClient"><div class="ic">🧑</div><div style="flex:1;"><div class="rt">Je cherche un produit</div><div class="rd">Trouvez le meilleur vendeur près de vous, ou laissez Aksina chercher pour vous.</div></div><div class="arrow">→</div></div>
+        <div class="role-card rc-vendeur fadeUp" id="pickVendeur" style="animation-delay:.08s;"><div class="ic">🏪</div><div style="flex:1;"><div class="rt">Je vends / je fournis</div><div class="rd">Gérez vos produits, vos commandes et vos demandes clients.</div></div><div class="arrow">→</div></div>
+        <div class="role-card rc-livreur fadeUp" id="pickLivreur" style="animation-delay:.16s;"><div class="ic">🛵</div><div style="flex:1;"><div class="rt">Je livre</div><div class="rd">Recevez les missions disponibles dans votre zone et suivez vos revenus.</div></div><div class="arrow">→</div></div>
+      </div>`;
+    document.getElementById('pickClient').addEventListener('click', () => renderRolePick('client'));
+    document.getElementById('pickVendeur').addEventListener('click', () => renderRolePick('vendeur'));
+    document.getElementById('pickLivreur').addEventListener('click', () => renderRolePick('livreur'));
+    return;
+  }
+
+  const roleIcon = preselect==='client' ? '🧑' : (preselect==='vendeur' ? '🏪' : '🛵');
+  const roleTitle = preselect==='client' ? 'Votre profil' : (preselect==='vendeur' ? 'Votre boutique' : 'Votre profil livreur');
+  const nomLabel = preselect==='client' ? 'Votre nom' : (preselect==='vendeur' ? 'Nom de votre boutique' : 'Votre nom');
+  m.innerHTML = `
+    <div class="onb-form">
+      <div class="onb-hero"><div class="oi">${roleIcon}</div><div class="ot">${roleTitle}</div></div>
+      <div class="onb-body">
+        <div class="field"><label>${nomLabel}</label><input id="obNom" placeholder="${preselect==='vendeur'?'ex. Boutique Sarr':'ex. Awa Diop'}"></div>
+        <div class="field">
+          <label>Votre zone</label>
+          <div style="display:flex;gap:8px;">
+            <input id="obZone" placeholder="ex. Thiès - Randoulène" style="flex:1;">
+            <button type="button" id="geoBtn" style="flex-shrink:0;background:var(--page);border:1.5px solid var(--border);border-radius:12px;padding:0 14px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;">📍</button>
+          </div>
+          <div id="geoStatus" style="font-size:10.5px;color:var(--muted);margin-top:6px;"></div>
+        </div>
+        <button class="btn-primary" id="obSubmit">Continuer →</button>
+        <button class="btn-ghost" id="obBack">← Retour</button>
+      </div>
+    </div>`;
+
+  document.getElementById('geoBtn').addEventListener('click', () => runAutoGeo(true));
+  document.getElementById('obBack').addEventListener('click', () => renderRolePick());
+  document.getElementById('obSubmit').addEventListener('click', async () => {
+    const nom = document.getElementById('obNom').value.trim();
+    const zone = document.getElementById('obZone').value.trim();
+    if(!nom || !zone) return;
+    await saveMyProfile(preselect, nom, zone);
+
+    // Un Vendeur ou un Livreur possède automatiquement un profil Client,
+    // dans le même compte, dès son inscription.
+    if(preselect === 'vendeur' || preselect === 'livreur'){
+      const existingClient = await getMyProfile('client');
+      if(!existingClient) await saveMyProfile('client', nom, zone);
+    }
+
+    await setActiveRoleDb(preselect);
+    app.role = preselect; app.profile = { nom, zone };
+    app.tab = preselect === 'client' ? 'home' : (preselect === 'vendeur' ? 'dashboard' : 'rhome');
+    renderApp();
+  });
+  runAutoGeo(false);
+}
+
+function runAutoGeo(manual){
+  const status = document.getElementById('geoStatus');
+  const zoneInput = document.getElementById('obZone');
+  if(!navigator.geolocation){ status.textContent = manual ? 'Géolocalisation non disponible sur cet appareil.' : ''; return; }
+  status.textContent = '📡 Détection automatique de votre position…';
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    try{
+      const {latitude, longitude} = pos.coords;
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`);
+      const data = await res.json();
+      const a = data.address || {};
+      const zoneName = a.suburb || a.neighbourhood || a.town || a.city || a.county || data.display_name;
+      zoneInput.value = zoneName;
+      status.textContent = '✅ Position détectée automatiquement — modifiable si besoin.';
+    } catch(e){ status.textContent = "Détection automatique impossible. Vous pouvez entrer votre zone manuellement."; }
+  }, () => {
+    status.textContent = manual ? 'Accès à la position refusé.' : "Détection automatique refusée. Entrez votre zone manuellement, ou autorisez la position et réessayez.";
+  });
+}
+
+/* ================= HEADER ================= */
+async function renderHeader(){
+  document.getElementById('main').style.padding = '112px 16px 92px';
+  const h = document.getElementById('hdr');
+  h.className = 'hdr';
+  h.style.paddingBottom = '10px';
+  const initials = app.profile.nom.trim().slice(0,2).toUpperCase();
+  const searchLabel = app.role==='client' ? 'Rechercher un produit...' : (app.role==='vendeur' ? 'Rechercher dans mes produits...' : 'Rechercher une mission...');
+
+  h.innerHTML = `
+    <div style="display:grid;grid-template-columns:56px 1fr 56px;gap:6px;margin-bottom:7px;">
+      <div id="topAksina" style="background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:var(--gold);">Aksina</div>
+      <div id="topTrend" style="background:rgba(245,158,11,.15);border-radius:10px;padding:5px 9px;cursor:pointer;overflow:hidden;display:flex;align-items:center;gap:6px;">
+        <span style="font-size:13px;flex-shrink:0;">🔥</span>
+        <div style="min-width:0;">
+          <div id="trendLine1" style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chargement des tendances…</div>
+          <div id="trendLine2" style="font-size:8px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+        </div>
+      </div>
+      <div id="topRek" style="background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:#fff;">Rék</div>
+    </div>
+    <div style="display:grid;grid-template-columns:32px 1fr 30px 30px;gap:6px;align-items:center;">
+      <div id="topAvatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;">${initials}</div>
+      <div id="topSearch" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0;">
+        <span style="font-size:12px;">🔍</span><span style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${searchLabel}</span>
+      </div>
+      <div id="topCart" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🛒</div>
+      <div id="topBell" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🔔<span id="bellBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:800;width:14px;height:14px;border-radius:50%;align-items:center;justify-content:center;"></span></div>
+    </div>`;
+
+  h.style.position = 'sticky';
+  h.style.top = '0';
+  h.style.zIndex = '50';
+
+  document.getElementById('topAksina').addEventListener('click', () => showComingSoon('Univers Aksina', "Le fond d'écran vivant et les campagnes de marque arrivent dans une prochaine version."));
+  document.getElementById('topRek').addEventListener('click', () => showComingSoon('Statuts Rék', "Les statuts vidéo façon Profil / Rék / Aksina arrivent dans une prochaine version."));
+  document.getElementById('topAvatar').addEventListener('click', () => { app.tab = 'profile'; renderApp(); });
+  document.getElementById('topSearch').addEventListener('click', () => { app.tab = app.role==='client' ? 'search' : (app.role==='vendeur' ? 'produits' : 'mission'); renderApp(); });
+  document.getElementById('topCart').addEventListener('click', () => { app.tab = app.role==='client' ? 'cart' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
+  document.getElementById('topBell').addEventListener('click', () => { app.tab = app.role==='client' ? 'delivery' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
+
+  loadTrendAndBadges();
+}
+
+async function loadTrendAndBadges(){
+  const sol = await fetchSolicitationsAll();
+  const counts = {};
+  sol.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const t1 = document.getElementById('trendLine1');
+  const t2 = document.getElementById('trendLine2');
+  if(t1){
+    if(sorted.length){
+      t1.textContent = `${sorted[0][1]} recherche${sorted[0][1]>1?'s':''} pour ${sorted[0][0]}`;
+      t2.textContent = `à ${app.profile.zone} récemment`;
+    } else {
+      t1.textContent = 'Aucune tendance pour le moment';
+      t2.textContent = 'Lancez une recherche pour la première';
+    }
+  }
+
+  let badgeCount = 0;
+  if(app.role === 'client'){
+    badgeCount = sol.filter(s => s.clientNom===app.profile.nom && s.status==='en_attente').length;
+  } else if(app.role === 'vendeur'){
+    badgeCount = sol.filter(s=>s.status==='en_attente').length;
+  } else {
+    const livs = await fetchLivraisonsAll();
+    badgeCount = livs.filter(l=>l.status==='a_livrer').length;
+  }
+  const badge = document.getElementById('bellBadge');
+  if(badge){
+    if(badgeCount > 0){ badge.style.display='flex'; badge.textContent = badgeCount > 9 ? '9+' : badgeCount; }
+    else badge.style.display = 'none';
+  }
+}
+
+function showComingSoon(title, desc){
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:22px;max-width:320px;text-align:center;">
+      <div style="font-size:28px;margin-bottom:10px;">🌍</div>
+      <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:16px;margin-bottom:8px;">${title}</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;">${desc}</div>
+      <button style="background:var(--navy);border:none;color:#fff;padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;" onclick="this.closest('div[style*=fixed]').remove()">Compris</button>
+    </div>`;
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function renderRoleSwitcher(){
+  document.getElementById('hdr').innerHTML = '';
+  document.getElementById('bnav').style.display = 'none';
+  const m = document.getElementById('main');
+  m.style.padding = '0';
+  m.innerHTML = `
+    <div class="rolepick">
+      <div class="rp-hdr"><div class="t">Changer de profil</div></div>
+      <div class="role-card rc-client" id="goClient"><div class="ic">🧑</div><div style="flex:1;"><div class="rt">Continuer en Client</div></div><div class="arrow">→</div></div>
+      <div class="role-card rc-vendeur" id="goVendeur"><div class="ic">🏪</div><div style="flex:1;"><div class="rt">Continuer en Vendeur</div></div><div class="arrow">→</div></div>
+      <div class="role-card rc-livreur" id="goLivreur"><div class="ic">🛵</div><div style="flex:1;"><div class="rt">Continuer en Livreur</div></div><div class="arrow">→</div></div>
+      <button class="btn-ghost" id="goBackApp" style="margin-top:6px;">← Annuler</button>
+    </div>`;
+  document.getElementById('goBackApp').addEventListener('click', renderApp);
+  document.getElementById('goClient').addEventListener('click', () => activateRole('client'));
+  document.getElementById('goVendeur').addEventListener('click', () => activateRole('vendeur'));
+  document.getElementById('goLivreur').addEventListener('click', () => activateRole('livreur'));
+}
+
+async function switchToClientQuick(){
+  let clientProfile = await getMyProfile('client');
+  if(!clientProfile){
+    clientProfile = { nom: app.profile.nom, zone: app.profile.zone };
+    await saveMyProfile('client', clientProfile.nom, clientProfile.zone);
+  }
+  await setActiveRoleDb('client');
+  app.role = 'client';
+  app.profile = clientProfile;
+  app.tab = 'home';
+  renderApp();
+}
+
+async function activateRole(role){
+  const profile = await getMyProfile(role);
+  await setActiveRoleDb(role);
+  app.role = role;
+  if(!profile){ renderRolePick(role); return; }
+  app.profile = profile;
+  app.tab = role === 'client' ? 'home' : (role === 'vendeur' ? 'dashboard' : 'rhome');
+  renderApp();
+}
+
+/* ================= NAV ================= */
+function renderNav(){
+  const n = document.getElementById('bnav');
+  n.style.display = 'flex';
+  if(app.role === 'client'){
+    n.innerHTML = `
+      <div class="bi ${app.tab==='home'?'on':''}" data-tab="home"><span class="bic">🏠</span>Accueil</div>
+      <div class="bi ${app.tab==='search'?'on':''}" data-tab="search"><span class="bic">🔍</span>Recherche</div>
+      <div class="bi ${app.tab==='bazar'?'on':''}" data-tab="bazar"><span class="bic">🛍️</span>Bazar</div>
+      <div class="bi ${app.tab==='delivery'?'on':''}" data-tab="delivery"><span class="bic">🛵</span>Livraison</div>
+      <div class="bi ${app.tab==='profile'?'on':''}" data-tab="profile"><span class="bic">👤</span>Profil</div>`;
+  } else if(app.role === 'vendeur'){
+    n.innerHTML = `
+      <div class="bi ${app.tab==='dashboard'?'on':''}" data-tab="dashboard"><span class="bic">📊</span>Dashboard</div>
+      <div class="bi ${app.tab==='commandes'?'on':''}" data-tab="commandes"><span class="bic">📦</span>Commandes</div>
+      <div class="bi ${app.tab==='produits'?'on':''}" data-tab="produits"><span class="bic">➕</span>Produits</div>
+      <div class="bi ${app.tab==='b2b'?'on':''}" data-tab="b2b"><span class="bic">🏢</span>B2B</div>
+      <div class="bi" id="navCourses"><span class="bic">🛒</span>Courses</div>`;
+  } else {
+    n.innerHTML = `
+      <div class="bi ${app.tab==='rhome'?'on':''}" data-tab="rhome"><span class="bic">🏠</span>Accueil</div>
+      <div class="bi ${app.tab==='mission'?'on':''}" data-tab="mission"><span class="bic">📦</span>Mission</div>
+      <div class="bi ${app.tab==='revenus'?'on':''}" data-tab="revenus"><span class="bic">💰</span>Revenus</div>
+      <div class="bi" id="navCoursesLivreur"><span class="bic">🛒</span>Courses</div>`;
+  }
+  n.querySelectorAll('.bi[data-tab]').forEach(el => el.addEventListener('click', () => { app.tab = el.getAttribute('data-tab'); renderApp(); }));
+  const nc = document.getElementById('navCourses');
+  if(nc) nc.addEventListener('click', switchToClientQuick);
+  const ncl = document.getElementById('navCoursesLivreur');
+  if(ncl) ncl.addEventListener('click', switchToClientQuick);
+}
+
+function renderApp(){
+  document.getElementById('aiFloatBtn').style.display = 'flex';
+  renderHeader(); renderNav();
+  if(app.tab==='home') renderHomeTab();
+  else if(app.tab==='search') renderSearchTab();
+  else if(app.tab==='cart') renderCartTab();
+  else if(app.tab==='delivery') renderClientDeliveryTab();
+  else if(app.tab==='profile') renderProfileTab();
+  else if(app.tab==='dashboard') renderDashboardTab();
+  else if(app.tab==='commandes') renderCommandesTab();
+  else if(app.tab==='produits') renderProduitsTab();
+  else if(app.tab==='b2b') renderB2BTab();
+  else if(app.tab==='rhome') renderLivreurHomeTab();
+  else if(app.tab==='mission') renderMissionTab();
+  else if(app.tab==='revenus') renderRevenusTab();
+  else if(app.tab==='bazar') renderBazarTab();
+}
+
+/* ================= BAZAR (C2C, accessible à tous les rôles) ================= */
+async function renderBazarTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const all = await fetchBazarAll();
+  const zoneItems = all.filter(b => b.zone.toLowerCase()===app.profile.zone.toLowerCase()).sort((a,b)=>b.createdAt-a.createdAt);
+
+  let html = `
+    <button id="bazarBack" style="background:none;border:none;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">← Retour</button>
+    <div class="sec-lbl">Publier une annonce</div>
+    <div class="add-form" style="flex-wrap:wrap;">
+      <input id="bazarTitre" placeholder="Ex. iPhone 12, canapé...">
+      <input id="bazarPrix" type="number" placeholder="Prix" style="max-width:80px;">
+      <button id="bazarAddBtn">+</button>
+    </div>
+    <div class="sec-lbl" style="margin-top:14px;">Près de chez vous · ${esc(app.profile.zone)}</div>`;
+
+  if(!zoneItems.length){
+    html += `<div class="empty fadeUp"><span class="eic">🛍️</span>Aucune annonce dans votre zone pour l'instant. Soyez le premier à publier.</div>`;
+  } else {
+    zoneItems.forEach((b,i) => {
+      html += `<div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;"><div><div class="cn">${esc(b.titre)}</div><div class="cz">${esc(b.auteur)} · ${esc(b.zone)}</div></div><div class="cp">${money(b.prix)} F</div></div>`;
+    });
+  }
+  m.innerHTML = html;
+
+  document.getElementById('bazarBack').addEventListener('click', () => {
+    app.tab = app.role==='client' ? 'home' : (app.role==='vendeur' ? 'dashboard' : 'rhome');
+    renderApp();
+  });
+  document.getElementById('bazarAddBtn').addEventListener('click', async () => {
+    const titre = document.getElementById('bazarTitre').value.trim();
+    const prix = document.getElementById('bazarPrix').value;
+    if(!titre || !prix) return;
+    await insertBazar({ id:uid(), titre, prix, auteur:app.profile.nom, zone:app.profile.zone });
+    renderBazarTab();
+  });
+}
+
+/* ================= CLIENT — ACCUEIL ================= */
+async function renderHomeTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const catalogue = await fetchCatalogueAll();
+  const local = catalogue.filter(c => c.zone.toLowerCase()===app.profile.zone.toLowerCase()).slice(-4).reverse();
+  const allSol = await fetchSolicitationsAll();
+  const enAttente = allSol.filter(s => s.clientNom===app.profile.nom && s.status==='en_attente').length;
+
+  let html = `
+    <div class="home-hero fadeUp">
+      <div class="ht">Bonjour ${esc(app.profile.nom.split(' ')[0])} 👋</div>
+      <div class="hs">Aksina surveille votre zone (${esc(app.profile.zone)}) pour vous trouver la meilleure offre, où qu'elle soit.</div>
+    </div>`;
+  if(enAttente > 0){
+    html += `<div class="req-card fadeUp" style="border-color:rgba(232,67,26,.3);"><div class="status-line"><div class="status-dot wait"></div><div class="status-txt">${enAttente} demande${enAttente>1?'s':''} en attente d'un vendeur</div></div></div>`;
+  }
+  html += `
+    <div class="sec-lbl" style="margin-top:16px;">Disponible près de vous</div>`;
+  if(!local.length){
+    html += `<div class="empty fadeUp"><span class="eic">🛍️</span>Aucun produit enregistré dans votre zone pour l'instant.<br>Utilisez la recherche pour lancer une demande.</div>`;
+  } else {
+    local.forEach((c,i) => {
+      html += `<div class="pcard fadeUp" style="animation-delay:${i*.05}s;"><div class="pcard-top"><div><div class="pcard-name">${esc(c.produit)}</div><div class="pcard-meta"><span class="local-badge">${esc(c.vendeurNom)}</span></div></div><div class="pcard-price"><div class="total">${money(c.prix)} F</div></div></div></div>`;
+    });
+  }
+  m.innerHTML = html;
+}
+
+/* ================= CLIENT — RECHERCHE ================= */
+async function renderSearchTab(query){
+  const m = document.getElementById('main');
+  m.innerHTML = `
+    <div class="sbar"><input id="searchInput" placeholder="Que cherchez-vous ?" value="${esc(query||'')}"><button id="searchBtn">Chercher</button></div>
+    <div class="search-hint">📍 Résultats triés par proximité et coût total réel (produit + livraison)</div>
+    <div id="searchResults"></div>`;
+  document.getElementById('searchBtn').addEventListener('click', () => runSearch());
+  document.getElementById('searchInput').addEventListener('keydown', e => { if(e.key==='Enter') runSearch(); });
+  if(query) runSearch(query);
+  else document.getElementById('searchResults').innerHTML = `<div class="empty fadeUp"><span class="eic">🔍</span>Tapez un produit pour voir les vendeurs disponibles autour de vous.</div>`;
+}
+
+async function runSearch(forced){
+  const input = document.getElementById('searchInput');
+  const q = (forced !== undefined ? forced : input.value).trim();
+  if(!q) return;
+  const r = document.getElementById('searchResults');
+  r.innerHTML = `<div class="empty">Recherche en cours…</div>`;
+
+  const catalogue = await fetchCatalogueAll();
+  const matches = catalogue
+    .filter(c => c.produit.toLowerCase().includes(q.toLowerCase()))
+    .map(c => {
+      const sameZone = c.zone.toLowerCase() === app.profile.zone.toLowerCase();
+      const livraison = sameZone ? 1000 : 3000;
+      return {...c, livraison, total:Number(c.prix)+livraison, sameZone};
+    })
+    .sort((a,b)=>a.total-b.total);
+
+  if(matches.length){
+    let html = `<div class="sec-lbl">🏆 Meilleures offres pour « ${esc(q)} »</div>`;
+    matches.forEach((v,i) => {
+      html += `
+        <div class="pcard ${i===0?'best':''} fadeUp" style="animation-delay:${i*.05}s;" data-vid="${v.id}">
+          <div class="pcard-top">
+            <div><div class="pcard-name">${i===0?'✅ ':''}${esc(v.vendeurNom)}</div><div class="pcard-meta"><span class="local-badge">📍 ${esc(v.zone)}${v.sameZone?' · votre zone':''}</span><span class="trust-badge">🔒 vérifié</span></div></div>
+            <div class="pcard-price"><div class="total">${money(v.total)} F</div><div class="detail">${money(v.prix)} + ${money(v.livraison)} liv.</div></div>
+          </div>
+          ${i===0?'<div class="win-badge">🏆 Offre recommandée Aksina</div>':''}
+          <button class="add-cart-btn" data-produit="${esc(v.produit)}" data-prix="${v.prix}" data-vendeur="${esc(v.vendeurNom)}" data-zone="${esc(v.zone)}">🛒 Ajouter au panier</button>
+        </div>`;
+    });
+    r.innerHTML = html;
+    r.querySelectorAll('.add-cart-btn').forEach(btn => btn.addEventListener('click', () => addToCart(btn)));
+    return;
+  }
+
+  r.innerHTML = `
+    <div class="empty fadeUp"><span class="eic">😕</span>Aucun vendeur ne propose <b>« ${esc(q)} »</b> pour l'instant.</div>
+    <div class="seek-box fadeUp"><div class="si">🔎</div><h4>One Seek AI</h4><p>Envoyez votre demande aux vendeurs de votre zone. Vous serez averti dès qu'un vendeur peut vous fournir ce produit.</p><button class="btn-primary" id="sendReq">Envoyer ma demande</button></div>`;
+  document.getElementById('sendReq').addEventListener('click', () => sendRequest(q));
+}
+
+function addToCart(btn){
+  cartItems.push({ id:uid(), produit:btn.dataset.produit, prix:Number(btn.dataset.prix), vendeurNom:btn.dataset.vendeur, zone:btn.dataset.zone });
+  btn.textContent = '✓ Ajouté au panier';
+  btn.disabled = true;
+}
+
+async function sendRequest(produit){
+  const sol = { id:uid(), clientNom:app.profile.nom, zone:app.profile.zone, produit, quantite:1, status:'en_attente' };
+  await insertSolicitation(sol);
+  app.tab = 'delivery';
+  renderApp();
+}
+
+/* ================= CLIENT — PANIER ================= */
+async function renderCartTab(){
+  const m = document.getElementById('main');
+  if(!cartItems.length){ m.innerHTML = `<div class="empty fadeUp"><span class="eic">🛒</span>Votre panier est vide.<br>Ajoutez un produit depuis la Recherche.</div>`; return; }
+
+  let total = 0;
+  let html = `<div class="sec-lbl">Votre panier</div>`;
+  cartItems.forEach(item => {
+    total += item.prix;
+    html += `<div class="catalog-item"><div><div class="cn">${esc(item.produit)}</div><div class="cz">${esc(item.vendeurNom)} · ${esc(item.zone)}</div></div><div class="cp">${money(item.prix)} F</div></div>`;
+  });
+  html += `
+    <div class="req-card" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-weight:800;font-size:13px;">Total</div><div style="font-weight:900;font-size:16px;color:var(--orange);">${money(total)} F</div>
+    </div>
+    <button class="btn-primary" id="confirmOrder" style="margin-top:14px;">Confirmer la commande</button>
+    <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6;">Paiement à la livraison pour l'instant — le paiement en ligne multi-opérateurs arrive dans une prochaine version.</div>`;
+  m.innerHTML = html;
+
+  document.getElementById('confirmOrder').addEventListener('click', async () => {
+    for(const item of cartItems){
+      const orderId = uid();
+      await insertOrder({ id:orderId, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, produit:item.produit, prix:item.prix, status:'nouvelle' });
+      await insertLivraison({ id:uid(), produit:item.produit, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, prix:item.prix, status:'a_livrer', livreurNom:null });
+    }
+    cartItems = [];
+    app.tab = 'delivery';
+    renderApp();
+  });
+}
+
+/* ================= CLIENT — LIVRAISON ================= */
+async function renderClientDeliveryTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const livs = await fetchLivraisonsAll();
+  const mine = livs.filter(l=>l.clientNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+
+  const allSol = await fetchSolicitationsAll();
+  const enAttenteVendeur = allSol.filter(s => s.clientNom===app.profile.nom && s.status==='en_attente');
+
+  if(!mine.length && !enAttenteVendeur.length){ m.innerHTML = `<div class="empty fadeUp"><span class="eic">🛵</span>Aucune livraison en cours.</div>`; return; }
+
+  let html = '';
+  enAttenteVendeur.forEach(s => {
+    html += `<div class="req-card fadeUp"><div class="req-obj">${esc(s.produit)}</div><div class="status-line"><div class="status-dot wait"></div><div class="status-txt">En attente d'un vendeur…</div></div></div>`;
+  });
+  mine.forEach((l,i) => {
+    const statusMap = { a_livrer:{c:'wait',t:'En attente d\u2019un livreur'}, en_cours:{c:'mid',t:`En route avec ${esc(l.livreurNom||'')}`}, livree:{c:'done',t:'Livré'} };
+    const st = statusMap[l.status] || statusMap.a_livrer;
+    html += `
+      <div class="req-card fadeUp" style="animation-delay:${i*.05}s;">
+        <div class="req-obj">${esc(l.produit)}</div>
+        <div class="status-line"><div class="status-dot ${st.c}"></div><div class="status-txt">${st.t}</div><div class="status-time">${new Date(l.createdAt).toLocaleDateString('fr-FR')}</div></div>
+        <div class="resp-box"><div class="n">${esc(l.vendeurNom)}</div><div class="m">💰 ${money(l.prix)} F</div></div>
+      </div>`;
+  });
+  m.innerHTML = html;
+}
+
+/* ================= VENDEUR — DASHBOARD ================= */
+async function renderDashboardTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const catalogue = await fetchCatalogueAll();
+  const mine = catalogue.filter(c=>c.vendeurNom===app.profile.nom);
+  const sol = await fetchSolicitationsAll();
+  const pending = sol.filter(s=>s.status==='en_attente').length;
+  const orders = await fetchOrdersAll();
+  const myOrders = orders.filter(o=>o.vendeurNom===app.profile.nom);
+
+  m.innerHTML = `
+    <div class="home-hero fadeUp"><div class="ht">Votre activité</div><div class="hs">${esc(app.profile.nom)} · ${esc(app.profile.zone)}</div></div>
+    <div class="kpi-grid">
+      <div class="kpi fadeUp"><div class="kv">${mine.length}</div><div class="kl">Produits en ligne</div></div>
+      <div class="kpi hot fadeUp" style="animation-delay:.05s;"><div class="kv">${pending}</div><div class="kl">Demandes en attente</div></div>
+      <div class="kpi fadeUp" style="animation-delay:.1s;"><div class="kv">${myOrders.length}</div><div class="kl">Commandes reçues</div></div>
+      <div class="kpi fadeUp" style="animation-delay:.15s;"><div class="kv">${myOrders.reduce((s,o)=>s+Number(o.prix),0).toLocaleString('fr-FR')} F</div><div class="kl">Chiffre d'affaires</div></div>
+    </div>
+    <div class="sec-lbl">Accès rapide</div>
+    <button class="btn-primary" id="goCommandes" style="margin-bottom:10px;">📦 Voir les commandes et demandes</button>
+    <button class="btn-primary" id="goProduits" style="background:linear-gradient(135deg,var(--navy),var(--blue));">➕ Gérer mes produits</button>`;
+  document.getElementById('goCommandes').addEventListener('click', () => { app.tab='commandes'; renderApp(); });
+  document.getElementById('goProduits').addEventListener('click', () => { app.tab='produits'; renderApp(); });
+}
+
+/* ================= VENDEUR — COMMANDES ================= */
+async function renderCommandesTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const orders = await fetchOrdersAll();
+  const myOrders = orders.filter(o=>o.vendeurNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+  const sol = await fetchSolicitationsAll();
+  const pending = sol.filter(s=>s.status==='en_attente').sort((a,b)=>b.createdAt-a.createdAt);
+
+  let html = '';
+  if(myOrders.length){
+    html += `<div class="sec-lbl">Commandes directes</div>`;
+    myOrders.forEach(o => {
+      html += `<div class="req-card"><div class="req-obj">${esc(o.produit)}</div><div class="pcard-meta" style="margin-bottom:2px;"><span class="local-badge">${esc(o.clientNom)}</span><span class="local-badge">${esc(o.clientZone)}</span></div><div class="win-badge" style="background:linear-gradient(135deg,var(--green),#059669);">${money(o.prix)} F</div></div>`;
+    });
+  }
+  if(pending.length){
+    html += `<div class="sec-lbl" style="margin-top:16px;">Nouvelles demandes (produit non trouvé chez vous)</div>`;
+    pending.forEach(s => {
+      const sameZone = s.zone.toLowerCase()===app.profile.zone.toLowerCase();
+      html += `
+        <div class="req-card" data-id="${s.id}">
+          <div class="req-obj">🔎 ${esc(s.produit)}</div>
+          <div class="pcard-meta" style="margin-bottom:2px;"><span class="local-badge">${esc(s.clientNom)}</span><span class="local-badge">📍 ${esc(s.zone)}${sameZone?' · votre zone':''}</span></div>
+          <div class="respond-form"><input type="number" class="rp-prix" placeholder="Prix (FCFA)"><input type="number" class="rp-delai" placeholder="Délai (h)" style="max-width:70px;"><button class="respond-btn">Répondre</button></div>
+        </div>`;
+    });
+  }
+  if(!myOrders.length && !pending.length){ html = `<div class="empty fadeUp"><span class="eic">📦</span>Aucune commande ni demande pour l'instant.</div>`; }
+  m.innerHTML = html;
+
+  m.querySelectorAll('.req-card[data-id]').forEach(card => {
+    const btn = card.querySelector('.respond-btn');
+    btn.addEventListener('click', async () => {
+      const prix = card.querySelector('.rp-prix').value;
+      const delai = card.querySelector('.rp-delai').value;
+      if(!prix || !delai){ alert('Renseignez un prix et un délai.'); return; }
+      btn.disabled = true; btn.textContent = '...';
+      const id = card.getAttribute('data-id');
+      const s = pending.find(p=>p.id===id);
+      await updateSolicitation(id, { status:'repondu', reponse:{ vendeurNom:app.profile.nom, prix, delai } });
+      if(s) await insertLivraison({ id:uid(), produit:s.produit, clientNom:s.clientNom, clientZone:s.zone, vendeurNom:app.profile.nom, vendeurZone:app.profile.zone, prix, status:'a_livrer', livreurNom:null });
+      renderCommandesTab();
+    });
+  });
+}
+
+/* ================= VENDEUR — PRODUITS ================= */
+async function renderProduitsTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const all = await fetchCatalogueAll();
+  const mine = all.filter(c=>c.vendeurNom===app.profile.nom);
+
+  let html = `<div class="sec-lbl">Ajouter un produit</div><div class="add-form"><input id="newProduit" placeholder="Produit (ex. riz brisé)"><input id="newPrix" type="number" placeholder="Prix" style="max-width:85px;"><button id="addProduitBtn">+</button></div>`;
+  if(!mine.length){ html += `<div class="empty fadeUp"><span class="eic">🗂️</span>Aucun produit encore. Ajoutez-en un pour apparaître dans les recherches.</div>`; }
+  else {
+    html += `<div class="sec-lbl">Vos produits (${mine.length})</div>`;
+    mine.forEach((c,i) => { html += `<div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;"><div><div class="cn">${esc(c.produit)}</div><div class="cz">📍 ${esc(c.zone)}</div></div><div class="cp">${money(c.prix)} F</div></div>`; });
+  }
+  m.innerHTML = html;
+
+  document.getElementById('addProduitBtn').addEventListener('click', async () => {
+    const produit = document.getElementById('newProduit').value.trim();
+    const prix = document.getElementById('newPrix').value;
+    if(!produit || !prix) return;
+    await insertCatalogue({ id:uid(), vendeurNom:app.profile.nom, zone:app.profile.zone, produit, prix });
+    renderProduitsTab();
+  });
+}
+
+/* ================= VENDEUR — B2B ================= */
+function renderB2BTab(){
+  document.getElementById('main').innerHTML = `
+    <div class="b2b-box fadeUp">
+      <div class="bi2">🏢</div>
+      <h3>One B2B</h3>
+      <p>Les commandes groupées entre entreprises (grossistes, inter-boutiques) sont en cours de conception et arriveront dans une prochaine version d'Aksina.</p>
+    </div>`;
+}
+
+/* ================= LIVREUR — ACCUEIL ================= */
+async function renderLivreurHomeTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const all = await fetchLivraisonsAll();
+  const dispo = all.filter(l=>l.status==='a_livrer').length;
+  const enCours = all.filter(l=>l.status==='en_cours' && l.livreurNom===app.profile.nom).length;
+  const livrees = all.filter(l=>l.status==='livree' && l.livreurNom===app.profile.nom);
+  const revenus = livrees.length * 500;
+
+  m.innerHTML = `
+    <div class="home-hero fadeUp"><div class="ht">Bonjour ${esc(app.profile.nom.split(' ')[0])} 🛵</div><div class="hs">Zone : ${esc(app.profile.zone)}</div></div>
+    <div class="kpi-grid">
+      <div class="kpi hot fadeUp"><div class="kv">${dispo}</div><div class="kl">Missions disponibles</div></div>
+      <div class="kpi fadeUp" style="animation-delay:.05s;"><div class="kv">${enCours}</div><div class="kl">En cours</div></div>
+      <div class="kpi fadeUp" style="animation-delay:.1s;"><div class="kv">${livrees.length}</div><div class="kl">Livrées</div></div>
+      <div class="kpi fadeUp" style="animation-delay:.15s;"><div class="kv">${money(revenus)} F</div><div class="kl">Revenus estimés</div></div>
+    </div>
+    <button class="btn-primary" id="goMission">📦 Voir les missions</button>`;
+  document.getElementById('goMission').addEventListener('click', () => { app.tab='mission'; renderApp(); });
+}
+
+/* ================= LIVREUR — MISSION ================= */
+async function renderMissionTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const all = await fetchLivraisonsAll();
+  const disponibles = all.filter(l=>l.status==='a_livrer').sort((a,b)=>b.createdAt-a.createdAt);
+  const mesLivraisons = all.filter(l=>l.status==='en_cours' && l.livreurNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+
+  if(!disponibles.length && !mesLivraisons.length){ m.innerHTML = `<div class="empty fadeUp"><span class="eic">🛵</span>Aucune mission pour l'instant.</div>`; return; }
+
+  let html = '';
+  if(mesLivraisons.length){
+    html += `<div class="sec-lbl">Votre mission en cours</div>`;
+    mesLivraisons.forEach(l => {
+      html += `<div class="req-card" data-id="${l.id}"><div class="req-obj">🛵 ${esc(l.produit)}</div><div class="pcard-meta" style="margin-bottom:8px;"><span class="local-badge">De ${esc(l.vendeurNom)}</span><span class="local-badge">Vers ${esc(l.clientNom)}, ${esc(l.clientZone)}</span></div><button class="respond-btn deliver-done" style="width:100%;">Marquer comme livré</button></div>`;
+    });
+  }
+  if(disponibles.length){
+    html += `<div class="sec-lbl" style="margin-top:16px;">Disponibles dans votre zone</div>`;
+    disponibles.forEach((l,i) => {
+      const sameZone = l.vendeurZone.toLowerCase()===app.profile.zone.toLowerCase();
+      html += `<div class="req-card fadeUp" data-id="${l.id}" style="animation-delay:${i*.05}s;"><div class="req-obj">📦 ${esc(l.produit)}</div><div class="pcard-meta" style="margin-bottom:8px;"><span class="local-badge">De ${esc(l.vendeurNom)}${sameZone?' · votre zone':''}</span><span class="local-badge">Vers ${esc(l.clientZone)}</span></div><button class="respond-btn claim-btn" style="width:100%;">Je prends cette mission</button></div>`;
+    });
+  }
+  m.innerHTML = html;
+
+  m.querySelectorAll('.claim-btn').forEach(btn => btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = '...';
+    const id = btn.closest('.req-card').getAttribute('data-id');
+    await updateLivraison(id, { status:'en_cours', livreurNom:app.profile.nom });
+    renderMissionTab();
+  }));
+  m.querySelectorAll('.deliver-done').forEach(btn => btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = '...';
+    const id = btn.closest('.req-card').getAttribute('data-id');
+    await updateLivraison(id, { status:'livree' });
+    renderMissionTab();
+  }));
+}
+
+/* ================= LIVREUR — REVENUS ================= */
+async function renderRevenusTab(){
+  const m = document.getElementById('main');
+  m.innerHTML = `<div class="empty">Chargement…</div>`;
+  const all = await fetchLivraisonsAll();
+  const livrees = all.filter(l=>l.status==='livree' && l.livreurNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+  const total = livrees.length * 500;
+
+  let html = `
+    <div class="home-hero fadeUp"><div class="ht">${money(total)} F</div><div class="hs">Revenus estimés · ${livrees.length} livraison${livrees.length>1?'s':''} · 500 F par course</div></div>`;
+  if(!livrees.length){ html += `<div class="empty fadeUp"><span class="eic">💰</span>Aucune livraison terminée pour l'instant.</div>`; }
+  else {
+    html += `<div class="sec-lbl">Historique</div>`;
+    livrees.forEach(l => { html += `<div class="catalog-item"><div><div class="cn">${esc(l.produit)}</div><div class="cz">${esc(l.clientZone)}</div></div><div class="cp">+500 F</div></div>`; });
+  }
+  m.innerHTML = html;
+}
+
+/* ================= PROFIL (commun) ================= */
+function rekStatus(score){
+  if(score >= 90) return {label:'Or', color:'#B8860B'};
+  if(score >= 75) return {label:'Argent', color:'#8A8F98'};
+  return {label:'Bronze', color:'#B08D57'};
+}
+
+async function renderProfileTab(){
+  const m = document.getElementById('main');
+  const initials = app.profile.nom.trim().slice(0,2).toUpperCase();
+
+  let statsHtml = '', successCount = 0, extraHtml = '';
+
+  if(app.role === 'client'){
+    const all = await fetchSolicitationsAll();
+    const mine = all.filter(s=>s.clientNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+    const resolved = mine.filter(s=>s.status==='repondu');
+    successCount = resolved.length;
+    const totalDepense = resolved.reduce((s,r)=>s+Number(r.reponse.prix),0);
+    statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Demandes</div></div><div class="pstat"><div class="num">${resolved.length}</div><div class="lbl">Résolues</div></div><div class="pstat"><div class="num">${money(totalDepense)} F</div><div class="lbl">Dépensé</div></div></div>`;
+
+    const recent = mine.slice(0,4);
+    extraHtml = `<div class="sec-lbl">Mes dernières demandes</div>`;
+    if(!recent.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune demande pour l'instant.</div>`; }
+    else recent.forEach(s => {
+      extraHtml += `<div class="catalog-item"><div><div class="cn">${esc(s.produit)}</div><div class="cz">${s.status==='repondu' ? '✅ Résolue' : '⏳ En attente'}</div></div>${s.status==='repondu' ? `<div class="cp">${money(s.reponse.prix)} F</div>` : ''}</div>`;
+    });
+
+  } else if(app.role === 'vendeur'){
+    const catalogue = await fetchCatalogueAll();
+    const mine = catalogue.filter(c=>c.vendeurNom===app.profile.nom);
+    const orders = await fetchOrdersAll();
+    const myOrders = orders.filter(o=>o.vendeurNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+    successCount = myOrders.length;
+    const ca = myOrders.reduce((s,o)=>s+Number(o.prix),0);
+    statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Produits</div></div><div class="pstat"><div class="num">${myOrders.length}</div><div class="lbl">Commandes</div></div><div class="pstat"><div class="num">${money(ca)} F</div><div class="lbl">CA total</div></div></div>`;
+
+    extraHtml = `<div class="sec-lbl">📄 Mes factures (One Invoice)</div>`;
+    if(!myOrders.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune facture pour l'instant — elles apparaissent dès votre première commande.</div>`; }
+    else myOrders.slice(0,6).forEach((o,i) => {
+      const ref = `AKS-${new Date(o.createdAt).getFullYear()}-${String(o.createdAt).slice(-6)}`;
+      extraHtml += `
+        <div class="catalog-item" style="align-items:flex-start;">
+          <div>
+            <div class="cn" style="font-family:monospace;font-size:11px;">${ref}</div>
+            <div class="cz">${esc(o.produit)} · ${esc(o.clientNom)} · ${new Date(o.createdAt).toLocaleDateString('fr-FR')}</div>
+          </div>
+          <div class="cp">${money(o.prix)} F</div>
+        </div>`;
+    });
+    extraHtml += `
+      <div class="sec-lbl" style="margin-top:14px;">Accès rapide à mes bases</div>
+      <button class="btn-ghost" id="goDashFromProfile" style="border:1.5px solid var(--border);text-align:left;padding:11px 13px;border-radius:11px;margin-bottom:8px;">📊 Tableau de bord complet</button>
+      <button class="btn-ghost" id="goCatFromProfile" style="border:1.5px solid var(--border);text-align:left;padding:11px 13px;border-radius:11px;">🗂️ Mon catalogue complet</button>`;
+
+  } else {
+    const livs = await fetchLivraisonsAll();
+    const mine = livs.filter(l=>l.livreurNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+    const done = mine.filter(l=>l.status==='livree');
+    successCount = done.length;
+    const revenus = done.length * 500;
+    statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Prises en charge</div></div><div class="pstat"><div class="num">${done.length}</div><div class="lbl">Livrées</div></div><div class="pstat"><div class="num">${money(revenus)} F</div><div class="lbl">Revenus</div></div></div>`;
+
+    extraHtml = `<div class="sec-lbl">📦 Historique de mes livraisons</div>`;
+    if(!mine.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune livraison pour l'instant.</div>`; }
+    else mine.slice(0,6).forEach(l => {
+      extraHtml += `<div class="catalog-item"><div><div class="cn">${esc(l.produit)}</div><div class="cz">${esc(l.clientZone)} · ${l.status==='livree'?'✅ Livré':'🛵 En cours'}</div></div>${l.status==='livree' ? '<div class="cp">+500 F</div>' : ''}</div>`;
+    });
+  }
+
+  const score = Math.min(99, 65 + successCount*4);
+  const rek = rekStatus(score);
+  const roleLabel = app.role==='client' ? '🧑 Client' : (app.role==='vendeur' ? '🏪 Vendeur' : '🛵 Livreur');
+
+  const allRoles = ['client','vendeur','livreur'];
+  const roleLabels = { client:'🧑 Client', vendeur:'🏪 Vendeur / Prestataire', livreur:'🛵 Livreur' };
+  const existingRoles = await getExistingRoles();
+  const otherExisting = existingRoles.filter(r => r !== app.role);
+  const missingRoles = allRoles.filter(r => !existingRoles.includes(r));
+
+  let profilesHtml = '';
+  if(otherExisting.length){
+    profilesHtml += `<div class="sec-lbl" style="margin-top:16px;">Mes autres profils</div>`;
+    otherExisting.forEach(r => {
+      profilesHtml += `<button class="btn-ghost switch-role-btn" data-role="${r}" style="border:1.5px solid var(--border);text-align:left;padding:11px 13px;border-radius:11px;margin-bottom:8px;width:100%;">${roleLabels[r]} — passer sur ce profil</button>`;
+    });
+  }
+  if(missingRoles.length){
+    profilesHtml += `<div class="sec-lbl" style="margin-top:16px;">Ajouter un profil (${existingRoles.length}/3)</div>`;
+    missingRoles.forEach(r => {
+      profilesHtml += `<button class="btn-ghost add-role-btn" data-role="${r}" style="border:1.5px dashed var(--orange);color:var(--orange);font-weight:700;text-align:left;padding:11px 13px;border-radius:11px;margin-bottom:8px;width:100%;">+ Devenir ${roleLabels[r]}</button>`;
+    });
+  }
+
+  m.innerHTML = `
+    <div class="profile-box">
+      <div class="profile-avatar">${initials}</div>
+      <div class="profile-name">${esc(app.profile.nom)}</div>
+      <div class="profile-meta">📍 ${esc(app.profile.zone)}</div>
+      <div class="profile-role-tag">${roleLabel}</div>
+    </div>
+    <div class="req-card" style="text-align:center;">
+      <div class="sec-lbl" style="margin-bottom:8px;">Statut One Rek</div>
+      <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:800;color:${rek.color};">${rek.label}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Score de confiance : ${score}/100 — basé sur votre activité réelle</div>
+    </div>
+    ${statsHtml}
+    ${extraHtml}
+    ${profilesHtml}`;
+
+  m.querySelectorAll('.switch-role-btn').forEach(btn => btn.addEventListener('click', async () => {
+    const r = btn.getAttribute('data-role');
+    const p = await getMyProfile(r);
+    await setActiveRoleDb(r);
+    app.role = r; app.profile = p;
+    app.tab = r==='client' ? 'home' : (r==='vendeur' ? 'dashboard' : 'rhome');
+    renderApp();
+  }));
+  m.querySelectorAll('.add-role-btn').forEach(btn => btn.addEventListener('click', () => {
+    renderRolePick(btn.getAttribute('data-role'));
+  }));
+
+  const goDash = document.getElementById('goDashFromProfile');
+  if(goDash) goDash.addEventListener('click', () => { app.tab='dashboard'; renderApp(); });
+  const goCat = document.getElementById('goCatFromProfile');
+  if(goCat) goCat.addEventListener('click', () => { app.tab='produits'; renderApp(); });
+}
+
+/* ================= ASSISTANT IA FLOTTANT (réel, branché sur le catalogue et les demandes) ================= */
+let aiInitialized = false;
+
+function initAIAssistant(){
+  const btn = document.getElementById('aiFloatBtn');
+  const panel = document.getElementById('aiPanel');
+  btn.addEventListener('click', () => {
+    const isOpen = panel.style.display === 'block';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if(!isOpen && !aiInitialized){
+      addAIMessage("Bonjour ! Dites-moi ce que vous cherchez — je regarde en direct dans le vrai catalogue Aksina, ce n'est pas une réponse préécrite.", 'bot');
+      aiInitialized = true;
+    }
+  });
+  document.getElementById('aiPanelClose').addEventListener('click', () => panel.style.display = 'none');
+  document.getElementById('aiSend').addEventListener('click', sendAIMessage);
+  document.getElementById('aiInput').addEventListener('keydown', e => { if(e.key === 'Enter') sendAIMessage(); });
+}
+
+function addAIMessage(text, who){
+  const box = document.getElementById('aiMessages');
+  const bubble = document.createElement('div');
+  bubble.style.cssText = who==='user' ? 'text-align:right;margin-bottom:8px;' : 'margin-bottom:8px;';
+  bubble.innerHTML = `<span style="display:inline-block;max-width:85%;padding:8px 11px;border-radius:10px;background:${who==='user'?'#1E3A5F':'#F4F6F8'};color:${who==='user'?'#fff':'#0F1720'};font-size:12px;line-height:1.5;">${text}</span>`;
+  box.appendChild(bubble);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendAIMessage(){
+  const input = document.getElementById('aiInput');
+  const q = input.value.trim();
+  if(!q) return;
+  addAIMessage(esc(q), 'user');
+  input.value = '';
+
+  const catalogue = await fetchCatalogueAll();
+  const matches = catalogue.filter(c => c.produit.toLowerCase().includes(q.toLowerCase()));
+
+  if(matches.length){
+    const best = matches.sort((a,b) => Number(a.prix)-Number(b.prix))[0];
+    addAIMessage(`J'ai trouvé <b>${esc(best.produit)}</b> chez ${esc(best.vendeurNom)} (${esc(best.zone)}) à <b>${money(best.prix)} F</b>. J'ouvre la recherche pour vous.`, 'bot');
+    setTimeout(() => {
+      document.getElementById('aiPanel').style.display = 'none';
+      if(app.role === 'client'){ app.tab = 'search'; renderApp(); setTimeout(() => runSearch(q), 150); }
+    }, 1000);
+  } else if(app.role === 'client'){
+    addAIMessage(`Personne ne propose « ${esc(q)} » pour l'instant près de vous. J'envoie une demande réelle aux vendeurs de votre zone via One Seek AI.`, 'bot');
+    setTimeout(() => { document.getElementById('aiPanel').style.display = 'none'; sendRequest(q); }, 1200);
+  } else {
+    addAIMessage(`Aucun résultat pour « ${esc(q)} » dans le catalogue actuel.`, 'bot');
+  }
+}
+
+initAIAssistant();
+boot();
+</script>
+</body>
+</html>
