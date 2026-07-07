@@ -366,7 +366,7 @@ function renderAuthChoice(){
 
 function phoneToPseudoEmail(phone){
   const digits = phone.replace(/[^0-9]/g, '');
-  return `${digits}@aksina.local`;
+  return `${digits}@aksina-id.com`;
 }
 
 function renderAuthFormShell(title, submitLabel, isSignup){
@@ -590,22 +590,21 @@ async function renderHeader(){
   const searchLabel = app.role==='client' ? 'Rechercher un produit...' : (app.role==='vendeur' ? 'Rechercher dans mes produits...' : 'Rechercher une mission...');
 
   h.innerHTML = `
-    <div style="display:grid;grid-template-columns:56px 1fr 56px;gap:6px;margin-bottom:7px;">
-      <div id="topAksina" style="background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:var(--gold);">Aksina</div>
-      <div id="topTrend" style="background:rgba(245,158,11,.15);border-radius:10px;padding:5px 9px;cursor:pointer;overflow:hidden;display:flex;align-items:center;gap:6px;">
-        <span style="font-size:13px;flex-shrink:0;">🔥</span>
+    <div style="display:grid;grid-template-columns:56px 1fr 60px;grid-template-rows:auto auto;gap:6px;align-items:stretch;">
+      <div id="topAksina" style="grid-column:1;grid-row:1;background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:var(--gold);">Aksina</div>
+      <div id="topCanvas" style="grid-column:2;grid-row:1 / span 2;background:rgba(245,158,11,.15);border-radius:10px;padding:8px 10px;cursor:pointer;overflow:hidden;display:flex;align-items:center;gap:7px;">
+        <span id="canvasIcon" style="font-size:15px;flex-shrink:0;">🔥</span>
         <div style="min-width:0;">
-          <div id="trendLine1" style="font-size:9px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chargement des tendances…</div>
-          <div id="trendLine2" style="font-size:8px;color:rgba(255,255,255,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+          <div id="trendLine1" style="font-size:10px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Chargement…</div>
+          <div id="trendLine2" style="font-size:8.5px;color:rgba(255,255,255,.65);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;"></div>
         </div>
       </div>
-      <div id="topRek" style="background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:#fff;">Rék</div>
-    </div>
-    <div style="display:grid;grid-template-columns:36px 1fr 30px 30px;gap:6px;align-items:center;">
-      <div id="topAvatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;">${initials}</div>
-      <div></div>
-      <div id="topCart" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🛒</div>
-      <div id="topBell" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🔔<span id="bellBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:800;width:14px;height:14px;border-radius:50%;align-items:center;justify-content:center;"></span></div>
+      <div id="topRek" style="grid-column:3;grid-row:1;background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:#fff;">Rék</div>
+      <div id="topAvatar" style="grid-column:1;grid-row:2;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer;">${initials}</div>
+      <div style="grid-column:3;grid-row:2;display:flex;gap:4px;justify-content:center;align-items:center;">
+        ${app.role==='client' ? `<div id="topCart" style="position:relative;width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">🛒</div>` : ''}
+        <div id="topBell" style="position:relative;width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">🔔<span id="bellBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:800;width:14px;height:14px;border-radius:50%;align-items:center;justify-content:center;"></span></div>
+      </div>
     </div>`;
 
   h.style.position = 'sticky';
@@ -615,26 +614,43 @@ async function renderHeader(){
   document.getElementById('topAksina').addEventListener('click', () => showComingSoon('Univers Aksina', "Vous évoluez déjà dedans — c'est le fond vivant derrière chaque écran de l'application. Les campagnes de marque mondiales arrivent dans une prochaine version."));
   document.getElementById('topRek').addEventListener('click', () => showComingSoon('Statuts Rék', "Les statuts vidéo façon Profil / Rék / Aksina arrivent dans une prochaine version."));
   document.getElementById('topAvatar').addEventListener('click', () => { app.tab = 'profile'; renderApp(); });
-  document.getElementById('topCart').addEventListener('click', () => { app.tab = app.role==='client' ? 'cart' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
+  const topCartEl = document.getElementById('topCart');
+  if(topCartEl) topCartEl.addEventListener('click', () => { app.tab = 'cart'; renderApp(); });
   document.getElementById('topBell').addEventListener('click', () => { app.tab = app.role==='client' ? 'delivery' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
+
+  if(app.role === 'vendeur'){
+    document.getElementById('topCanvas').addEventListener('click', () => { app.tab = 'demandesFeed'; renderApp(); });
+  } else {
+    document.getElementById('topCanvas').addEventListener('click', () => showComingSoon('Univers Aksina', "Le monde qui inspire — statuts et campagnes mondiales, arrive dans une prochaine version."));
+  }
 
   loadTrendAndBadges();
 }
 
 async function loadTrendAndBadges(){
   const sol = await fetchSolicitationsAll();
-  const counts = {};
-  sol.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
-  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   const t1 = document.getElementById('trendLine1');
   const t2 = document.getElementById('trendLine2');
+  const icon = document.getElementById('canvasIcon');
+
   if(t1){
-    if(sorted.length){
-      t1.textContent = `${sorted[0][1]} recherche${sorted[0][1]>1?'s':''} pour ${sorted[0][0]}`;
-      t2.textContent = `à ${app.profile.zone} récemment`;
+    if(app.role === 'vendeur'){
+      const pending = sol.filter(s => s.status==='en_attente');
+      const counts = {};
+      pending.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
+      const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+      icon.textContent = '🔎';
+      if(sorted.length){
+        t1.textContent = `${pending.length} produit${pending.length>1?'s':''} recherché${pending.length>1?'s':''} non trouvé${pending.length>1?'s':''}`;
+        t2.textContent = `dont « ${sorted[0][0]} » (${sorted[0][1]}×) — voir tout →`;
+      } else {
+        t1.textContent = 'Aucune demande non satisfaite';
+        t2.textContent = 'Les recherches infructueuses apparaîtront ici';
+      }
     } else {
-      t1.textContent = 'Aucune tendance pour le moment';
-      t2.textContent = 'Lancez une recherche pour la première';
+      icon.textContent = '🌍';
+      t1.textContent = 'Univers Aksina';
+      t2.textContent = 'Le monde qui inspire — bientôt';
     }
   }
 
@@ -662,10 +678,11 @@ function showComingSoon(title, desc){
       <div style="font-size:28px;margin-bottom:10px;">🌍</div>
       <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:16px;margin-bottom:8px;">${title}</div>
       <div style="font-size:12.5px;color:var(--muted);line-height:1.6;margin-bottom:16px;">${desc}</div>
-      <button style="background:var(--navy);border:none;color:#fff;padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;" onclick="this.closest('div[style*=fixed]').remove()">Compris</button>
+      <button id="comingSoonClose" style="background:var(--navy);border:none;color:#fff;padding:10px 20px;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;">Compris</button>
     </div>`;
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+  document.getElementById('comingSoonClose').addEventListener('click', () => overlay.remove());
 }
 
 function renderRoleSwitcher(){
@@ -719,8 +736,7 @@ function renderNav(){
       <div class="bi ${app.tab==='home'?'on':''}" data-tab="home"><span class="bic">🏠</span>Accueil</div>
       <div class="bi ${app.tab==='search'?'on':''}" data-tab="search"><span class="bic">🔍</span>Recherche</div>
       <div class="bi ${app.tab==='bazar'?'on':''}" data-tab="bazar"><span class="bic">🛍️</span>Bazar</div>
-      <div class="bi ${app.tab==='delivery'?'on':''}" data-tab="delivery"><span class="bic">🛵</span>Livraison</div>
-      <div class="bi ${app.tab==='profile'?'on':''}" data-tab="profile"><span class="bic">👤</span>Profil</div>`;
+      <div class="bi ${app.tab==='delivery'?'on':''}" data-tab="delivery"><span class="bic">🛵</span>Livraison</div>`;
   } else if(app.role === 'vendeur'){
     n.innerHTML = `
       <div class="bi ${app.tab==='dashboard'?'on':''}" data-tab="dashboard"><span class="bic">📊</span>Dashboard</div>
@@ -758,6 +774,60 @@ function renderApp(){
   else if(app.tab==='mission') renderMissionTab();
   else if(app.tab==='revenus') renderRevenusTab();
   else if(app.tab==='bazar') renderBazarTab();
+  else if(app.tab==='demandesFeed') renderDemandesFeedTab();
+}
+
+/* ================= VENDEUR — FIL DES DEMANDES NON SATISFAITES (défilement vertical) ================= */
+async function renderDemandesFeedTab(){
+  const m = document.getElementById('main');
+  m.style.padding = '0';
+  m.innerHTML = `<div class="empty" style="padding:60px 20px;">Chargement…</div>`;
+  const sol = await fetchSolicitationsAll();
+  const pending = sol.filter(s => s.status==='en_attente').sort((a,b)=>b.createdAt-a.createdAt);
+
+  const counts = {};
+  pending.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
+
+  if(!pending.length){
+    m.innerHTML = `
+      <div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+        <button id="feedBack" style="position:absolute;top:16px;left:16px;background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">← Retour</button>
+        <span style="font-size:36px;margin-bottom:10px;">🔎</span>
+        <div style="font-weight:800;font-size:14px;">Aucune demande non satisfaite pour l'instant</div>
+      </div>`;
+    document.getElementById('feedBack').addEventListener('click', () => { app.tab='dashboard'; renderApp(); });
+    return;
+  }
+
+  let html = `<div style="scroll-snap-type:y mandatory;overflow-y:auto;height:100vh;">`;
+  pending.forEach((s,i) => {
+    const count = counts[s.produit];
+    html += `
+      <div style="scroll-snap-align:start;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#1E3A5F,#0F1720);color:#fff;position:relative;">
+        ${i===0 ? `<button id="feedBack" style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">← Retour</button>` : ''}
+        <div style="position:absolute;top:16px;right:16px;font-size:11px;color:rgba(255,255,255,.5);">${i+1} / ${pending.length}</div>
+        <span style="font-size:44px;margin-bottom:16px;">🔎</span>
+        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:24px;text-align:center;">${esc(s.produit)}</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:8px;">Demandé ${count} fois · ${esc(s.zone)}</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;">${new Date(s.createdAt).toLocaleDateString('fr-FR')}</div>
+        <button class="add-from-feed-btn" data-produit="${esc(s.produit)}" style="margin-top:26px;background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;padding:13px 26px;border-radius:30px;font-weight:800;font-size:13px;cursor:pointer;">➕ Ajouter ce produit à mon catalogue</button>
+        <div style="margin-top:14px;font-size:10.5px;color:rgba(255,255,255,.4);">↓ Glissez pour voir la suite</div>
+      </div>`;
+  });
+  html += `</div>`;
+  m.innerHTML = html;
+
+  document.getElementById('feedBack').addEventListener('click', () => { app.tab='dashboard'; renderApp(); m.style.padding=''; });
+  m.querySelectorAll('.add-from-feed-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      app.tab = 'produits';
+      renderApp();
+      setTimeout(() => {
+        const input = document.getElementById('newProduit');
+        if(input) input.value = btn.getAttribute('data-produit');
+      }, 150);
+    });
+  });
 }
 
 /* ================= BAZAR (C2C, accessible à tous les rôles) ================= */
@@ -781,7 +851,8 @@ async function renderBazarTab(){
       <input id="bazarPrix" type="number" placeholder="Prix" style="max-width:80px;">
       <button id="bazarAddBtn">+</button>
     </div>
-    <div id="bazarPrixHint" style="font-size:10px;color:var(--muted);margin:-4px 2px 12px;"></div>
+    <div id="bazarPrixHint" style="font-size:10px;color:var(--muted);margin:-4px 2px 4px;"></div>
+    <div id="bazarErr" style="font-size:11px;color:var(--red);margin:0 2px 12px;"></div>
     <div class="sec-lbl">Près de chez vous · ${esc(app.profile.zone)}</div>`;
 
   if(!zoneItems.length){
@@ -820,7 +891,9 @@ async function renderBazarTab(){
   document.getElementById('bazarAddBtn').addEventListener('click', async () => {
     const titre = document.getElementById('bazarTitre').value.trim();
     const prix = selectedType==='donner' ? 0 : (document.getElementById('bazarPrix').value || 0);
-    if(!titre) return;
+    const err = document.getElementById('bazarErr');
+    if(!titre){ err.textContent = 'Écrivez un titre avant de publier.'; return; }
+    err.textContent = '';
     await insertBazar({ id:uid(), titre, prix, type:selectedType, auteur:app.profile.nom, zone:app.profile.zone });
     renderBazarTab();
   });
@@ -1241,9 +1314,7 @@ async function renderLivreurHomeTab(){
       <div style="display:flex;align-items:flex-end;gap:5px;height:55px;">
         ${parJour.map((v,i) => `<div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div style="width:100%;background:linear-gradient(135deg,var(--orange),var(--gold));border-radius:4px 4px 0 0;height:${Math.max(4,(v/maxVal)*48)}px;"></div><div style="font-size:9.5px;color:var(--muted);margin-top:2px;">${jours[(now.getDay()-6+i+70)%7]}</div></div>`).join('')}
       </div>
-    </div>
-    <button class="btn-primary" id="goMission">📦 Voir les missions</button>`;
-  document.getElementById('goMission').addEventListener('click', () => { app.tab='mission'; renderApp(); });
+    </div>`;
   document.getElementById('toggleDispoOn').addEventListener('click', async () => { app.profile.disponible = true; await setDisponibilite('livreur', true); renderLivreurHomeTab(); });
   document.getElementById('toggleDispoOff').addEventListener('click', async () => { app.profile.disponible = false; await setDisponibilite('livreur', false); renderLivreurHomeTab(); });
 }
@@ -1356,10 +1427,6 @@ async function renderProfileTab(){
           <div class="cp">${money(o.prix)} F</div>
         </div>`;
     });
-    extraHtml += `
-      <div class="sec-lbl" style="margin-top:14px;">Accès rapide à mes bases</div>
-      <button class="btn-ghost" id="goDashFromProfile" style="border:1.5px solid var(--border);text-align:left;padding:11px 13px;border-radius:11px;margin-bottom:8px;">📊 Tableau de bord complet</button>
-      <button class="btn-ghost" id="goCatFromProfile" style="border:1.5px solid var(--border);text-align:left;padding:11px 13px;border-radius:11px;">🗂️ Mon catalogue complet</button>`;
 
   } else {
     const livs = await fetchLivraisonsAll();
