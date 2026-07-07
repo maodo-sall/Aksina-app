@@ -12,8 +12,12 @@
     --ink:#0F1720;--muted:#5B6B7A;--border:#E4E9EE;--panel:#FFFFFF;--page:#F7F8FA;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  body{margin:0;font-family:'Inter',sans-serif;background:#0d1420;color:var(--ink);display:flex;justify-content:center;padding:0;}
-  .app{width:100%;max-width:430px;min-height:100vh;background:var(--page);display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.4);position:relative;}
+  body{margin:0;font-family:'Inter',sans-serif;background:#0d1420;color:var(--ink);display:flex;justify-content:center;padding:0;overflow-x:hidden;}
+  #universAksina{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(ellipse at 30% 20%,#1a2f52,#0d1420 60%);pointer-events:none;}
+  #universAksina .orb{position:absolute;border-radius:50%;filter:blur(40px);opacity:.35;animation:universDrift 22s ease-in-out infinite;}
+  @keyframes universDrift{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(20px,-30px) scale(1.15);}}
+  .app{width:100%;max-width:430px;min-height:100vh;background:rgba(247,248,250,.86);backdrop-filter:blur(2px);display:flex;flex-direction:column;box-shadow:0 0 60px rgba(0,0,0,.4);position:relative;z-index:1;}
+  .page-bg{background:transparent !important;}
 
   @keyframes gpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
@@ -164,6 +168,11 @@
 </style>
 </head>
 <body>
+<div id="universAksina">
+  <div class="orb" style="width:220px;height:220px;background:var(--orange);top:8%;left:-10%;"></div>
+  <div class="orb" style="width:180px;height:180px;background:var(--blue);top:55%;right:-8%;animation-delay:-8s;"></div>
+  <div class="orb" style="width:150px;height:150px;background:var(--gold);bottom:5%;left:15%;animation-delay:-14s;"></div>
+</div>
 <div class="app">
   <div id="hdr"></div>
   <div id="main"></div>
@@ -193,18 +202,13 @@ const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUserId = null;
 
-async function ensureAuth(){
+async function checkSession(){
   try{
-    const { data: sessionData } = await sbClient.auth.getSession();
-    if(sessionData && sessionData.session){ currentUserId = sessionData.session.user.id; return true; }
-    const { data, error } = await sbClient.auth.signInAnonymously();
-    if(error) throw error;
-    currentUserId = data.user.id;
-    return true;
+    const { data } = await sbClient.auth.getSession();
+    if(data && data.session){ currentUserId = data.session.user.id; return true; }
+    return false;
   } catch(e){
-    console.error('Auth anonyme indisponible', e);
-    currentUserId = 'local-' + Math.random().toString(36).slice(2,10);
-    notifyOfflineMode('auth');
+    console.error('Vérification de session impossible', e);
     return false;
   }
 }
@@ -230,14 +234,25 @@ async function fetchAll(table){
 }
 
 /* ---- mappers snake_case (base) <-> camelCase (application) ---- */
-function mapCatalogue(r){ return { id:r.id, vendeurNom:r.vendeur_nom, zone:r.zone, produit:r.produit, prix:Number(r.prix), createdAt:new Date(r.created_at).getTime() }; }
+function mapCatalogue(r){ return { id:r.id, vendeurNom:r.vendeur_nom, zone:r.zone, produit:r.produit, prix:Number(r.prix), stock:r.stock==null?10:Number(r.stock), photoUrl:r.photo_url||null, createdAt:new Date(r.created_at).getTime() }; }
+
+async function uploadProductPhoto(file){
+  try{
+    const path = `${currentUserId}/${uid()}.jpg`;
+    const { error } = await sbClient.storage.from('produits').upload(path, file);
+    if(error){ console.error(error); notifyOfflineMode('db'); return null; }
+    const { data } = sbClient.storage.from('produits').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e){ console.error(e); return null; }
+}
 function mapSolicitation(r){ return { id:r.id, clientNom:r.client_nom, zone:r.zone, produit:r.produit, quantite:r.quantite, status:r.status, reponse:r.reponse, createdAt:new Date(r.created_at).getTime() }; }
-function mapOrder(r){ return { id:r.id, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, produit:r.produit, prix:Number(r.prix), status:r.status, createdAt:new Date(r.created_at).getTime() }; }
+function mapOrder(r){ return { id:r.id, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, produit:r.produit, prix:Number(r.prix), status:r.status, factureNum:r.facture_num, ledgerId:r.ledger_id, createdAt:new Date(r.created_at).getTime() }; }
 function mapLivraison(r){ return { id:r.id, produit:r.produit, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, prix:Number(r.prix), status:r.status, livreurNom:r.livreur_nom, createdAt:new Date(r.created_at).getTime() }; }
-function mapBazar(r){ return { id:r.id, titre:r.titre, prix:Number(r.prix), auteur:r.auteur, zone:r.zone, createdAt:new Date(r.created_at).getTime() }; }
+function mapBazar(r){ return { id:r.id, titre:r.titre, prix:Number(r.prix), type:r.type||'vendre', auteur:r.auteur, zone:r.zone, createdAt:new Date(r.created_at).getTime() }; }
 
 async function fetchCatalogueAll(){ return (await fetchAll('app_catalogue')).map(mapCatalogue); }
-async function insertCatalogue(item){ const { error } = await sbClient.from('app_catalogue').insert({ id:item.id, vendeur_nom:item.vendeurNom, zone:item.zone, produit:item.produit, prix:item.prix }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function insertCatalogue(item){ const { error } = await sbClient.from('app_catalogue').insert({ id:item.id, vendeur_nom:item.vendeurNom, zone:item.zone, produit:item.produit, prix:item.prix, stock:item.stock, photo_url:item.photoUrl||null }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function updateCatalogueStock(id, stock){ const { error } = await sbClient.from('app_catalogue').update({ stock }).eq('id', id); if(error){ console.error(error); notifyOfflineMode('db'); } }
 
 async function fetchSolicitationsAll(){ return (await fetchAll('app_solicitations')).map(mapSolicitation); }
 async function insertSolicitation(item){ const { error } = await sbClient.from('app_solicitations').insert({ id:item.id, client_nom:item.clientNom, zone:item.zone, produit:item.produit, quantite:item.quantite, status:item.status }); if(error){ console.error(error); notifyOfflineMode('db'); } }
@@ -250,7 +265,7 @@ async function updateSolicitation(id, patch){
 }
 
 async function fetchOrdersAll(){ return (await fetchAll('app_orders')).map(mapOrder); }
-async function insertOrder(item){ const { error } = await sbClient.from('app_orders').insert({ id:item.id, client_nom:item.clientNom, client_zone:item.clientZone, vendeur_nom:item.vendeurNom, vendeur_zone:item.vendeurZone, produit:item.produit, prix:item.prix, status:item.status }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function insertOrder(item){ const { error } = await sbClient.from('app_orders').insert({ id:item.id, client_nom:item.clientNom, client_zone:item.clientZone, vendeur_nom:item.vendeurNom, vendeur_zone:item.vendeurZone, produit:item.produit, prix:item.prix, status:item.status, facture_num:item.factureNum||null, ledger_id:item.ledgerId||null }); if(error){ console.error(error); notifyOfflineMode('db'); } }
 
 async function fetchLivraisonsAll(){ return (await fetchAll('app_livraisons')).map(mapLivraison); }
 async function insertLivraison(item){ const { error } = await sbClient.from('app_livraisons').insert({ id:item.id, produit:item.produit, client_nom:item.clientNom, client_zone:item.clientZone, vendeur_nom:item.vendeurNom, vendeur_zone:item.vendeurZone, prix:item.prix, status:item.status, livreur_nom:item.livreurNom||null }); if(error){ console.error(error); notifyOfflineMode('db'); } }
@@ -263,16 +278,20 @@ async function updateLivraison(id, patch){
 }
 
 async function fetchBazarAll(){ return (await fetchAll('app_bazar')).map(mapBazar); }
-async function insertBazar(item){ const { error } = await sbClient.from('app_bazar').insert({ id:item.id, titre:item.titre, prix:item.prix, auteur:item.auteur, zone:item.zone }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function insertBazar(item){ const { error } = await sbClient.from('app_bazar').insert({ id:item.id, titre:item.titre, prix:item.prix, type:item.type, auteur:item.auteur, zone:item.zone }); if(error){ console.error(error); notifyOfflineMode('db'); } }
 
 /* ---- profils réels (une ligne par rôle, par utilisateur) ---- */
 async function getMyProfile(role){
   const { data, error } = await sbClient.from('app_profiles').select('*').eq('user_id', currentUserId).eq('role', role).maybeSingle();
   if(error){ console.error(error); return null; }
-  return data ? { nom:data.nom, zone:data.zone } : null;
+  return data ? { nom:data.nom, zone:data.zone, disponible: data.disponible !== false } : null;
 }
 async function saveMyProfile(role, nom, zone){
   const { error } = await sbClient.from('app_profiles').upsert({ user_id:currentUserId, role, nom, zone }, { onConflict:'user_id,role' });
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
+async function setDisponibilite(role, disponible){
+  const { error } = await sbClient.from('app_profiles').update({ disponible }).eq('user_id', currentUserId).eq('role', role);
   if(error){ console.error(error); notifyOfflineMode('db'); }
 }
 async function getExistingRoles(){
@@ -311,15 +330,153 @@ function setupRealtime(){
 
 /* ================= BOOT ================= */
 async function boot(){
-  await ensureAuth();
   setupRealtime();
+  const hasSession = await checkSession();
+  if(!hasSession){ renderAuthChoice(); return; }
+  await afterAuthProceed();
+}
+
+async function afterAuthProceed(){
   const activeRole = await getActiveRoleDb();
-  if(!activeRole){ renderSplash(); return; }
+  if(!activeRole){ renderRolePick(); return; }
   const profile = await getMyProfile(activeRole);
   if(!profile){ renderRolePick(activeRole); return; }
   app.role = activeRole; app.profile = profile;
   app.tab = activeRole === 'client' ? 'home' : (activeRole === 'vendeur' ? 'dashboard' : 'rhome');
   renderApp();
+}
+
+/* ================= AUTHENTIFICATION RÉELLE ================= */
+function renderAuthChoice(){
+  document.getElementById('hdr').innerHTML = '';
+  document.getElementById('bnav').style.display = 'none';
+  document.getElementById('main').style.padding = '0';
+  document.getElementById('main').innerHTML = `
+    <div class="splash">
+      <div class="splash-icon">🔒</div>
+      <div class="splash-name">Aksina</div>
+      <div class="splash-tag">One ID · One Trust · One Connect</div>
+      <div class="splash-desc">Le vendeur invisible qui trouve ce qu'il vous faut — ou qui trouve à qui vendre.</div>
+      <button class="splash-btn" id="goSignup">Créer un compte →</button>
+      <button class="btn-ghost" id="goLogin" style="color:rgba(255,255,255,.8);margin-top:14px;">J'ai déjà un compte</button>
+    </div>`;
+  document.getElementById('goSignup').addEventListener('click', renderSignupForm);
+  document.getElementById('goLogin').addEventListener('click', renderLoginForm);
+}
+
+function phoneToPseudoEmail(phone){
+  const digits = phone.replace(/[^0-9]/g, '');
+  return `${digits}@aksina.local`;
+}
+
+function renderAuthFormShell(title, submitLabel, isSignup){
+  const m = document.getElementById('main');
+  m.style.padding = '0';
+  m.innerHTML = `
+    <div class="onb-form">
+      <div class="onb-hero"><div class="oi">🔒</div><div class="ot">${title}</div></div>
+      <div class="onb-body">
+        <div style="display:flex;gap:7px;margin-bottom:16px;">
+          <button type="button" class="auth-mode-btn on" data-mode="phone" style="flex:1;border:1.5px solid var(--orange);background:var(--orange);color:#fff;border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:700;cursor:pointer;">📱 Téléphone</button>
+          <button type="button" class="auth-mode-btn" data-mode="email" style="flex:1;border:1.5px solid var(--border);background:#fff;color:var(--ink);border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:700;cursor:pointer;">✉️ Email</button>
+        </div>
+        <div class="field"><label id="authIdLabel">Numéro de téléphone</label><input id="authIdentifier" type="tel" placeholder="77 123 45 67" autocomplete="tel"></div>
+        <div class="field"><label>Mot de passe</label><input id="authPassword" type="password" placeholder="6 caractères minimum" autocomplete="${isSignup?'new-password':'current-password'}"></div>
+        <div id="authStatus" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:14px;"></div>
+        <button class="btn-primary" id="authSubmit">${submitLabel}</button>
+        <button class="btn-ghost" id="authBack">← Retour</button>
+      </div>
+    </div>`;
+  document.getElementById('authBack').addEventListener('click', renderAuthChoice);
+
+  let mode = 'phone';
+  m.querySelectorAll('.auth-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      mode = btn.getAttribute('data-mode');
+      m.querySelectorAll('.auth-mode-btn').forEach(b => { b.style.background='#fff'; b.style.color='var(--ink)'; b.style.borderColor='var(--border)'; });
+      btn.style.background='var(--orange)'; btn.style.color='#fff'; btn.style.borderColor='var(--orange)';
+      const input = document.getElementById('authIdentifier');
+      const label = document.getElementById('authIdLabel');
+      if(mode==='phone'){ input.type='tel'; input.placeholder='77 123 45 67'; label.textContent='Numéro de téléphone'; }
+      else { input.type='email'; input.placeholder='vous@exemple.com'; label.textContent='Email'; }
+    });
+  });
+  m.getAuthMode = () => mode;
+}
+
+function renderSignupForm(){
+  renderAuthFormShell('Créer votre compte', "S'inscrire", true);
+  const m = document.getElementById('main');
+  document.getElementById('authSubmit').addEventListener('click', async () => {
+    const raw = document.getElementById('authIdentifier').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const status = document.getElementById('authStatus');
+    const mode = m.getAuthMode();
+    if(!raw || password.length < 6){ status.textContent = (mode==='phone'?'Numéro de téléphone':'Email valide') + ' et mot de passe de 6 caractères minimum requis.'; return; }
+    const email = mode === 'phone' ? phoneToPseudoEmail(raw) : raw;
+    status.style.color = 'var(--muted)'; status.textContent = 'Création du compte…';
+    const { data, error } = await sbClient.auth.signUp({ email, password });
+    if(error){ status.style.color = 'var(--red)'; status.textContent = mode==='phone' ? 'Ce numéro est peut-être déjà utilisé.' : error.message; return; }
+    if(data.session){ currentUserId = data.session.user.id; await afterAuthProceed(); }
+    else if(mode === 'phone'){ currentUserId = data.user.id; await afterAuthProceed(); }
+    else { status.style.color = 'var(--green)'; status.textContent = '✅ Compte créé. Vérifiez votre email pour confirmer, puis connectez-vous.'; }
+  });
+}
+
+function renderLoginForm(){
+  renderAuthFormShell('Connexion', 'Se connecter', false);
+  const m = document.getElementById('main');
+  document.getElementById('authSubmit').addEventListener('click', async () => {
+    const raw = document.getElementById('authIdentifier').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const status = document.getElementById('authStatus');
+    const mode = m.getAuthMode();
+    if(!raw || !password){ status.textContent = 'Entrez vos identifiants.'; return; }
+    const email = mode === 'phone' ? phoneToPseudoEmail(raw) : raw;
+    status.style.color = 'var(--muted)'; status.textContent = 'Connexion…';
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+    if(error){ status.style.color = 'var(--red)'; status.textContent = (mode==='phone'?'Numéro':'Email') + ' ou mot de passe incorrect.'; return; }
+    currentUserId = data.session.user.id;
+    await afterAuthProceed();
+  });
+}
+
+async function logout(){
+  await sbClient.auth.signOut();
+  location.reload();
+}
+
+/* ================= SERVICE ASSISTANCE ================= */
+function renderSupportScreen(){
+  const m = document.getElementById('main');
+  m.innerHTML = `
+    <button id="supportBack" style="background:none;border:none;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;">← Retour</button>
+    <div class="profile-box" style="padding-top:6px;">
+      <div style="font-size:36px;margin-bottom:8px;">💬</div>
+      <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:800;">Service assistance</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;">Nous sommes là pour vous aider</div>
+    </div>
+    <a href="tel:+221770000000" style="text-decoration:none;">
+      <div class="req-card" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--green),#059669);border:none;">
+        <span style="font-size:24px;">📞</span>
+        <div style="color:#fff;"><div style="font-weight:800;font-size:13px;">Appeler l'assistance</div><div style="font-size:11px;opacity:.85;">+221 77 000 00 00</div></div>
+      </div>
+    </a>
+    <div class="sec-lbl" style="margin-top:16px;">Ou envoyez-nous un message</div>
+    <div class="field"><textarea id="supportMsg" rows="4" style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:13px;font-family:inherit;background:#fff;" placeholder="Décrivez votre problème…"></textarea></div>
+    <div id="supportStatus" style="font-size:11px;color:var(--green);margin-bottom:8px;min-height:14px;"></div>
+    <button class="btn-primary" id="supportSend">Envoyer le message</button>`;
+
+  document.getElementById('supportBack').addEventListener('click', () => { app.tab='profile'; renderApp(); });
+  document.getElementById('supportSend').addEventListener('click', async () => {
+    const msg = document.getElementById('supportMsg').value.trim();
+    const status = document.getElementById('supportStatus');
+    if(!msg){ status.style.color='var(--red)'; status.textContent="Écrivez votre message avant d'envoyer."; return; }
+    const { error } = await sbClient.from('app_support').insert({ id:uid(), user_id:currentUserId, nom:app.profile.nom, role:app.role, message:msg });
+    if(error){ status.style.color='var(--red)'; status.textContent="Échec de l'envoi. Réessayez."; console.error(error); return; }
+    status.style.color='var(--green)'; status.textContent='✅ Message envoyé. Nous vous répondrons rapidement.';
+    document.getElementById('supportMsg').value = '';
+  });
 }
 
 /* ================= SPLASH ================= */
@@ -444,11 +601,9 @@ async function renderHeader(){
       </div>
       <div id="topRek" style="background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:#fff;">Rék</div>
     </div>
-    <div style="display:grid;grid-template-columns:32px 1fr 30px 30px;gap:6px;align-items:center;">
+    <div style="display:grid;grid-template-columns:36px 1fr 30px 30px;gap:6px;align-items:center;">
       <div id="topAvatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer;flex-shrink:0;">${initials}</div>
-      <div id="topSearch" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;min-width:0;">
-        <span style="font-size:12px;">🔍</span><span style="font-size:10px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${searchLabel}</span>
-      </div>
+      <div></div>
       <div id="topCart" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🛒</div>
       <div id="topBell" style="position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;">🔔<span id="bellBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:800;width:14px;height:14px;border-radius:50%;align-items:center;justify-content:center;"></span></div>
     </div>`;
@@ -457,10 +612,9 @@ async function renderHeader(){
   h.style.top = '0';
   h.style.zIndex = '50';
 
-  document.getElementById('topAksina').addEventListener('click', () => showComingSoon('Univers Aksina', "Le fond d'écran vivant et les campagnes de marque arrivent dans une prochaine version."));
+  document.getElementById('topAksina').addEventListener('click', () => showComingSoon('Univers Aksina', "Vous évoluez déjà dedans — c'est le fond vivant derrière chaque écran de l'application. Les campagnes de marque mondiales arrivent dans une prochaine version."));
   document.getElementById('topRek').addEventListener('click', () => showComingSoon('Statuts Rék', "Les statuts vidéo façon Profil / Rék / Aksina arrivent dans une prochaine version."));
   document.getElementById('topAvatar').addEventListener('click', () => { app.tab = 'profile'; renderApp(); });
-  document.getElementById('topSearch').addEventListener('click', () => { app.tab = app.role==='client' ? 'search' : (app.role==='vendeur' ? 'produits' : 'mission'); renderApp(); });
   document.getElementById('topCart').addEventListener('click', () => { app.tab = app.role==='client' ? 'cart' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
   document.getElementById('topBell').addEventListener('click', () => { app.tab = app.role==='client' ? 'delivery' : (app.role==='vendeur' ? 'commandes' : 'mission'); renderApp(); });
 
@@ -612,25 +766,52 @@ async function renderBazarTab(){
   m.innerHTML = `<div class="empty">Chargement…</div>`;
   const all = await fetchBazarAll();
   const zoneItems = all.filter(b => b.zone.toLowerCase()===app.profile.zone.toLowerCase()).sort((a,b)=>b.createdAt-a.createdAt);
+  const typeLabels = { vendre:{l:'Vendre',c:'var(--blue)',i:'💰'}, echanger:{l:'Échanger',c:'var(--green)',i:'🔄'}, donner:{l:'Donner',c:'var(--purple)',i:'🎁'} };
 
   let html = `
     <button id="bazarBack" style="background:none;border:none;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">← Retour</button>
     <div class="sec-lbl">Publier une annonce</div>
+    <div style="display:flex;gap:7px;margin-bottom:10px;">
+      <button class="bazar-type-btn on" data-type="vendre" style="flex:1;border:1.5px solid var(--blue);background:var(--blue);color:#fff;border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">💰 Vendre</button>
+      <button class="bazar-type-btn" data-type="echanger" style="flex:1;border:1.5px solid var(--border);background:#fff;color:var(--ink);border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">🔄 Échanger</button>
+      <button class="bazar-type-btn" data-type="donner" style="flex:1;border:1.5px solid var(--border);background:#fff;color:var(--ink);border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">🎁 Donner</button>
+    </div>
     <div class="add-form" style="flex-wrap:wrap;">
       <input id="bazarTitre" placeholder="Ex. iPhone 12, canapé...">
       <input id="bazarPrix" type="number" placeholder="Prix" style="max-width:80px;">
       <button id="bazarAddBtn">+</button>
     </div>
-    <div class="sec-lbl" style="margin-top:14px;">Près de chez vous · ${esc(app.profile.zone)}</div>`;
+    <div id="bazarPrixHint" style="font-size:10px;color:var(--muted);margin:-4px 2px 12px;"></div>
+    <div class="sec-lbl">Près de chez vous · ${esc(app.profile.zone)}</div>`;
 
   if(!zoneItems.length){
     html += `<div class="empty fadeUp"><span class="eic">🛍️</span>Aucune annonce dans votre zone pour l'instant. Soyez le premier à publier.</div>`;
   } else {
     zoneItems.forEach((b,i) => {
-      html += `<div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;"><div><div class="cn">${esc(b.titre)}</div><div class="cz">${esc(b.auteur)} · ${esc(b.zone)}</div></div><div class="cp">${money(b.prix)} F</div></div>`;
+      const t = typeLabels[b.type] || typeLabels.vendre;
+      html += `
+        <div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;">
+          <div><div class="cn">${t.i} ${esc(b.titre)}</div><div class="cz">${esc(b.auteur)} · ${esc(b.zone)}</div></div>
+          <div class="cp" style="color:${t.c};">${b.type==='donner' ? 'Gratuit' : money(b.prix)+' F'}</div>
+        </div>`;
     });
   }
   m.innerHTML = html;
+
+  let selectedType = 'vendre';
+  m.querySelectorAll('.bazar-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedType = btn.getAttribute('data-type');
+      m.querySelectorAll('.bazar-type-btn').forEach(b => { b.style.background='#fff'; b.style.color='var(--ink)'; b.style.borderColor='var(--border)'; });
+      const colorMap = { vendre:'var(--blue)', echanger:'var(--green)', donner:'var(--purple)' };
+      btn.style.background = colorMap[selectedType]; btn.style.color = '#fff'; btn.style.borderColor = colorMap[selectedType];
+      const prixInput = document.getElementById('bazarPrix');
+      const hint = document.getElementById('bazarPrixHint');
+      if(selectedType === 'donner'){ prixInput.style.display='none'; hint.textContent = 'Un don ne demande pas de prix.'; }
+      else if(selectedType === 'echanger'){ prixInput.placeholder = 'Valeur estimée (optionnel)'; prixInput.style.display=''; hint.textContent = "Indiquez ce que vous cherchez en échange dans le titre."; }
+      else { prixInput.placeholder = 'Prix'; prixInput.style.display=''; hint.textContent = ''; }
+    });
+  });
 
   document.getElementById('bazarBack').addEventListener('click', () => {
     app.tab = app.role==='client' ? 'home' : (app.role==='vendeur' ? 'dashboard' : 'rhome');
@@ -638,9 +819,9 @@ async function renderBazarTab(){
   });
   document.getElementById('bazarAddBtn').addEventListener('click', async () => {
     const titre = document.getElementById('bazarTitre').value.trim();
-    const prix = document.getElementById('bazarPrix').value;
-    if(!titre || !prix) return;
-    await insertBazar({ id:uid(), titre, prix, auteur:app.profile.nom, zone:app.profile.zone });
+    const prix = selectedType==='donner' ? 0 : (document.getElementById('bazarPrix').value || 0);
+    if(!titre) return;
+    await insertBazar({ id:uid(), titre, prix, type:selectedType, auteur:app.profile.nom, zone:app.profile.zone });
     renderBazarTab();
   });
 }
@@ -696,10 +877,10 @@ async function runSearch(forced){
 
   const catalogue = await fetchCatalogueAll();
   const matches = catalogue
-    .filter(c => c.produit.toLowerCase().includes(q.toLowerCase()))
+    .filter(c => c.produit.toLowerCase().includes(q.toLowerCase()) && c.stock > 0)
     .map(c => {
       const sameZone = c.zone.toLowerCase() === app.profile.zone.toLowerCase();
-      const livraison = sameZone ? 1000 : 3000;
+      const livraison = sameZone ? 300 : 900;
       return {...c, livraison, total:Number(c.prix)+livraison, sameZone};
     })
     .sort((a,b)=>a.total-b.total);
@@ -710,11 +891,12 @@ async function runSearch(forced){
       html += `
         <div class="pcard ${i===0?'best':''} fadeUp" style="animation-delay:${i*.05}s;" data-vid="${v.id}">
           <div class="pcard-top">
+            ${v.photoUrl ? `<img src="${v.photoUrl}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;margin-right:10px;">` : ''}
             <div><div class="pcard-name">${i===0?'✅ ':''}${esc(v.vendeurNom)}</div><div class="pcard-meta"><span class="local-badge">📍 ${esc(v.zone)}${v.sameZone?' · votre zone':''}</span><span class="trust-badge">🔒 vérifié</span></div></div>
             <div class="pcard-price"><div class="total">${money(v.total)} F</div><div class="detail">${money(v.prix)} + ${money(v.livraison)} liv.</div></div>
           </div>
           ${i===0?'<div class="win-badge">🏆 Offre recommandée Aksina</div>':''}
-          <button class="add-cart-btn" data-produit="${esc(v.produit)}" data-prix="${v.prix}" data-vendeur="${esc(v.vendeurNom)}" data-zone="${esc(v.zone)}">🛒 Ajouter au panier</button>
+          <button class="add-cart-btn" data-catid="${v.id}" data-produit="${esc(v.produit)}" data-prix="${v.prix}" data-livraison="${v.livraison}" data-vendeur="${esc(v.vendeurNom)}" data-zone="${esc(v.zone)}">🛒 Ajouter au panier</button>
         </div>`;
     });
     r.innerHTML = html;
@@ -729,7 +911,7 @@ async function runSearch(forced){
 }
 
 function addToCart(btn){
-  cartItems.push({ id:uid(), produit:btn.dataset.produit, prix:Number(btn.dataset.prix), vendeurNom:btn.dataset.vendeur, zone:btn.dataset.zone });
+  cartItems.push({ id:uid(), catalogueId:btn.dataset.catid, produit:btn.dataset.produit, prix:Number(btn.dataset.prix), livraison:Number(btn.dataset.livraison), vendeurNom:btn.dataset.vendeur, zone:btn.dataset.zone });
   btn.textContent = '✓ Ajouté au panier';
   btn.disabled = true;
 }
@@ -742,6 +924,8 @@ async function sendRequest(produit){
 }
 
 /* ================= CLIENT — PANIER ================= */
+let deliveryMode = 'moto';
+
 async function renderCartTab(){
   const m = document.getElementById('main');
   if(!cartItems.length){ m.innerHTML = `<div class="empty fadeUp"><span class="eic">🛒</span>Votre panier est vide.<br>Ajoutez un produit depuis la Recherche.</div>`; return; }
@@ -749,10 +933,23 @@ async function renderCartTab(){
   let total = 0;
   let html = `<div class="sec-lbl">Votre panier</div>`;
   cartItems.forEach(item => {
-    total += item.prix;
-    html += `<div class="catalog-item"><div><div class="cn">${esc(item.produit)}</div><div class="cz">${esc(item.vendeurNom)} · ${esc(item.zone)}</div></div><div class="cp">${money(item.prix)} F</div></div>`;
+    const liv = deliveryMode === 'retrait' ? 0 : item.livraison;
+    const itemTotal = item.prix + liv;
+    total += itemTotal;
+    html += `<div class="catalog-item"><div><div class="cn">${esc(item.produit)}</div><div class="cz">${esc(item.vendeurNom)} · ${esc(item.zone)}</div><div class="cz">${money(item.prix)}${liv>0?` + ${money(liv)} liv.`:' · retrait gratuit'}</div></div><div class="cp">${money(itemTotal)} F</div></div>`;
   });
+
   html += `
+    <div class="sec-lbl" style="margin-top:14px;">🛵 Mode de livraison</div>
+    <div class="req-card" id="modeMoto" style="cursor:pointer;border-color:${deliveryMode==='moto'?'var(--orange)':'var(--border)'};display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">🛵</span><div style="flex:1;"><div style="font-size:12.5px;font-weight:700;">Moto Express</div><div style="font-size:10.5px;color:var(--muted);">10-20 min · selon distance</div></div>
+      ${deliveryMode==='moto'?'<span style="color:var(--orange);font-weight:800;">✓</span>':''}
+    </div>
+    <div class="req-card" id="modeRetrait" style="cursor:pointer;border-color:${deliveryMode==='retrait'?'var(--orange)':'var(--border)'};display:flex;align-items:center;gap:10px;">
+      <span style="font-size:20px;">🚶</span><div style="flex:1;"><div style="font-size:12.5px;font-weight:700;">Retrait sur place</div><div style="font-size:10.5px;color:var(--muted);">Chez le vendeur · gratuit</div></div>
+      ${deliveryMode==='retrait'?'<span style="color:var(--orange);font-weight:800;">✓</span>':'<span style="color:var(--green);font-weight:800;font-size:11px;">Gratuit</span>'}
+    </div>
+
     <div class="req-card" style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
       <div style="font-weight:800;font-size:13px;">Total</div><div style="font-weight:900;font-size:16px;color:var(--orange);">${money(total)} F</div>
     </div>
@@ -760,16 +957,39 @@ async function renderCartTab(){
     <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6;">Paiement à la livraison pour l'instant — le paiement en ligne multi-opérateurs arrive dans une prochaine version.</div>`;
   m.innerHTML = html;
 
+  document.getElementById('modeMoto').addEventListener('click', () => { deliveryMode = 'moto'; renderCartTab(); });
+  document.getElementById('modeRetrait').addEventListener('click', () => { deliveryMode = 'retrait'; renderCartTab(); });
+
   document.getElementById('confirmOrder').addEventListener('click', async () => {
     for(const item of cartItems){
       const orderId = uid();
-      await insertOrder({ id:orderId, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, produit:item.produit, prix:item.prix, status:'nouvelle' });
-      await insertLivraison({ id:uid(), produit:item.produit, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, prix:item.prix, status:'a_livrer', livreurNom:null });
+      const liv = deliveryMode === 'retrait' ? 0 : item.livraison;
+      const factureNum = await genererNumeroFacture('C2C');
+      const ledgerId = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+      await insertOrder({ id:orderId, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, produit:item.produit, prix:item.prix, status:'nouvelle', factureNum, ledgerId });
+      if(item.catalogueId){
+        const catalogue = await fetchCatalogueAll();
+        const prod = catalogue.find(c => c.id === item.catalogueId);
+        if(prod) await updateCatalogueStock(item.catalogueId, Math.max(0, prod.stock - 1));
+      }
+      if(deliveryMode !== 'retrait'){
+        await insertLivraison({ id:uid(), produit:item.produit, clientNom:app.profile.nom, clientZone:app.profile.zone, vendeurNom:item.vendeurNom, vendeurZone:item.zone, prix:item.prix + liv, status:'a_livrer', livreurNom:null });
+      }
     }
     cartItems = [];
+    deliveryMode = 'moto';
     app.tab = 'delivery';
     renderApp();
   });
+}
+
+/* ================= NUMÉROTATION DES FACTURES (format AKS-[Pays]-[Année]-[Ville]-[Type]-[Numéro]) ================= */
+async function genererNumeroFacture(type){
+  const annee = new Date().getFullYear();
+  const ville = (app.profile.zone || 'XXX').slice(0,3).toUpperCase();
+  const { count } = await sbClient.from('app_orders').select('*', { count:'exact', head:true });
+  const numero = String((count||0) + 1).padStart(6,'0');
+  return `AKS-SN-${annee}-${ville}-${type}-${numero}`;
 }
 
 /* ================= CLIENT — LIVRAISON ================= */
@@ -807,17 +1027,28 @@ async function renderDashboardTab(){
   m.innerHTML = `<div class="empty">Chargement…</div>`;
   const catalogue = await fetchCatalogueAll();
   const mine = catalogue.filter(c=>c.vendeurNom===app.profile.nom);
+  const actifs = mine.filter(c=>c.stock>0).length;
+  const rupture = mine.filter(c=>c.stock<=0).length;
   const sol = await fetchSolicitationsAll();
   const pending = sol.filter(s=>s.status==='en_attente').length;
   const orders = await fetchOrdersAll();
   const myOrders = orders.filter(o=>o.vendeurNom===app.profile.nom);
+  const sameZoneOrders = myOrders.filter(o=>o.clientZone.toLowerCase()===app.profile.zone.toLowerCase());
+  const pctZone = myOrders.length ? Math.round((sameZoneOrders.length/myOrders.length)*100) : 0;
 
   m.innerHTML = `
     <div class="home-hero fadeUp"><div class="ht">Votre activité</div><div class="hs">${esc(app.profile.nom)} · ${esc(app.profile.zone)}</div></div>
+
+    <div class="req-card fadeUp" style="border-color:rgba(16,185,129,.3);background:linear-gradient(180deg,rgba(16,185,129,.05),#fff 60%);">
+      <div style="font-size:11px;font-weight:800;color:#059669;margin-bottom:8px;">🏆 Impact Moteur Aksina sur votre boutique</div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:6px;"><span style="color:var(--muted);">Commandes clients de votre zone</span><span style="font-weight:800;color:#059669;">${pctZone}%</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;"><span style="color:var(--muted);">Commandes totales via Aksina</span><span style="font-weight:800;color:#059669;">${myOrders.length}</span></div>
+    </div>
+
     <div class="kpi-grid">
-      <div class="kpi fadeUp"><div class="kv">${mine.length}</div><div class="kl">Produits en ligne</div></div>
-      <div class="kpi hot fadeUp" style="animation-delay:.05s;"><div class="kv">${pending}</div><div class="kl">Demandes en attente</div></div>
-      <div class="kpi fadeUp" style="animation-delay:.1s;"><div class="kv">${myOrders.length}</div><div class="kl">Commandes reçues</div></div>
+      <div class="kpi fadeUp"><div class="kv">${actifs}</div><div class="kl">Produits actifs</div></div>
+      <div class="kpi ${rupture>0?'hot':''} fadeUp" style="animation-delay:.05s;"><div class="kv">${rupture}</div><div class="kl">En rupture</div></div>
+      <div class="kpi hot fadeUp" style="animation-delay:.1s;"><div class="kv">${pending}</div><div class="kl">Demandes en attente</div></div>
       <div class="kpi fadeUp" style="animation-delay:.15s;"><div class="kv">${myOrders.reduce((s,o)=>s+Number(o.prix),0).toLocaleString('fr-FR')} F</div><div class="kl">Chiffre d'affaires</div></div>
     </div>
     <div class="sec-lbl">Accès rapide</div>
@@ -868,33 +1099,95 @@ async function renderCommandesTab(){
       const id = card.getAttribute('data-id');
       const s = pending.find(p=>p.id===id);
       await updateSolicitation(id, { status:'repondu', reponse:{ vendeurNom:app.profile.nom, prix, delai } });
-      if(s) await insertLivraison({ id:uid(), produit:s.produit, clientNom:s.clientNom, clientZone:s.zone, vendeurNom:app.profile.nom, vendeurZone:app.profile.zone, prix, status:'a_livrer', livreurNom:null });
+      if(s){
+        const factureNum = await genererNumeroFacture('B2C');
+        const ledgerId = crypto.randomUUID ? crypto.randomUUID() : uid()+uid();
+        await insertOrder({ id:uid(), clientNom:s.clientNom, clientZone:s.zone, vendeurNom:app.profile.nom, vendeurZone:app.profile.zone, produit:s.produit, prix, status:'nouvelle', factureNum, ledgerId });
+        await insertLivraison({ id:uid(), produit:s.produit, clientNom:s.clientNom, clientZone:s.zone, vendeurNom:app.profile.nom, vendeurZone:app.profile.zone, prix, status:'a_livrer', livreurNom:null });
+      }
       renderCommandesTab();
     });
   });
 }
 
 /* ================= VENDEUR — PRODUITS ================= */
+let pendingPhotoFile = null;
+
 async function renderProduitsTab(){
   const m = document.getElementById('main');
   m.innerHTML = `<div class="empty">Chargement…</div>`;
   const all = await fetchCatalogueAll();
   const mine = all.filter(c=>c.vendeurNom===app.profile.nom);
+  const enRupture = mine.filter(c=>c.stock<=0);
+  pendingPhotoFile = null;
 
-  let html = `<div class="sec-lbl">Ajouter un produit</div><div class="add-form"><input id="newProduit" placeholder="Produit (ex. riz brisé)"><input id="newPrix" type="number" placeholder="Prix" style="max-width:85px;"><button id="addProduitBtn">+</button></div>`;
+  let html = `
+    <div class="sec-lbl">Ajouter un produit</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <label for="newPhoto" style="width:52px;height:52px;border-radius:12px;border:1.5px dashed var(--border);background:var(--page);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0;overflow:hidden;" id="photoPreviewBox">📷</label>
+      <input type="file" id="newPhoto" accept="image/*" capture="environment" style="display:none;">
+      <div style="font-size:10.5px;color:var(--muted);">Prenez ou choisissez une photo du produit (optionnel)</div>
+    </div>
+    <div class="add-form"><input id="newProduit" placeholder="Produit (ex. riz brisé)"><input id="newPrix" type="number" placeholder="Prix" style="max-width:75px;"><input id="newStock" type="number" placeholder="Stock" style="max-width:65px;"><button id="addProduitBtn">+</button></div>`;
+
+  if(enRupture.length){
+    html += `<div class="req-card fadeUp" style="border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.05);margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;"><div class="status-dot wait" style="background:var(--red);"></div><span style="font-size:12px;font-weight:800;color:var(--red);">Stock épuisé (${enRupture.length})</span></div>
+      <div style="font-size:11px;color:var(--muted);">${enRupture.map(c=>esc(c.produit)).join(', ')} — invisibles dans les recherches clients tant que le stock n'est pas remis à jour.</div>
+    </div>`;
+  }
+
   if(!mine.length){ html += `<div class="empty fadeUp"><span class="eic">🗂️</span>Aucun produit encore. Ajoutez-en un pour apparaître dans les recherches.</div>`; }
   else {
     html += `<div class="sec-lbl">Vos produits (${mine.length})</div>`;
-    mine.forEach((c,i) => { html += `<div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;"><div><div class="cn">${esc(c.produit)}</div><div class="cz">📍 ${esc(c.zone)}</div></div><div class="cp">${money(c.prix)} F</div></div>`; });
+    mine.forEach((c,i) => {
+      const rupture = c.stock <= 0;
+      html += `
+        <div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;flex-wrap:wrap;${rupture?'opacity:.6;':''}">
+          <div style="display:flex;gap:10px;align-items:center;flex:1;">
+            ${c.photoUrl ? `<img src="${c.photoUrl}" style="width:40px;height:40px;border-radius:9px;object-fit:cover;flex-shrink:0;">` : `<div style="width:40px;height:40px;border-radius:9px;background:var(--page);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">📦</div>`}
+            <div><div class="cn">${esc(c.produit)} ${rupture?'⚠️':''}</div><div class="cz">📍 ${esc(c.zone)}</div></div>
+          </div>
+          <div class="cp">${money(c.prix)} F</div>
+          <div style="width:100%;display:flex;align-items:center;gap:6px;margin-top:8px;">
+            <span style="font-size:10.5px;color:var(--muted);">Stock :</span>
+            <input type="number" class="stock-input" data-id="${c.id}" value="${c.stock}" style="width:60px;border:1.5px solid var(--border);border-radius:8px;padding:5px 7px;font-size:12px;font-family:inherit;">
+            <button class="stock-save-btn" data-id="${c.id}" style="background:var(--navy);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">Mettre à jour</button>
+          </div>
+        </div>`;
+    });
   }
   m.innerHTML = html;
+
+  document.getElementById('newPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    pendingPhotoFile = file;
+    const box = document.getElementById('photoPreviewBox');
+    box.innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%;height:100%;object-fit:cover;">`;
+  });
 
   document.getElementById('addProduitBtn').addEventListener('click', async () => {
     const produit = document.getElementById('newProduit').value.trim();
     const prix = document.getElementById('newPrix').value;
+    const stock = document.getElementById('newStock').value || 10;
     if(!produit || !prix) return;
-    await insertCatalogue({ id:uid(), vendeurNom:app.profile.nom, zone:app.profile.zone, produit, prix });
+    const btn = document.getElementById('addProduitBtn');
+    btn.disabled = true; btn.textContent = '...';
+    let photoUrl = null;
+    if(pendingPhotoFile){ photoUrl = await uploadProductPhoto(pendingPhotoFile); }
+    await insertCatalogue({ id:uid(), vendeurNom:app.profile.nom, zone:app.profile.zone, produit, prix, stock, photoUrl });
     renderProduitsTab();
+  });
+
+  m.querySelectorAll('.stock-save-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const input = m.querySelector(`.stock-input[data-id="${id}"]`);
+      btn.textContent = '...'; btn.disabled = true;
+      await updateCatalogueStock(id, Number(input.value));
+      renderProduitsTab();
+    });
   });
 }
 
@@ -917,17 +1210,42 @@ async function renderLivreurHomeTab(){
   const enCours = all.filter(l=>l.status==='en_cours' && l.livreurNom===app.profile.nom).length;
   const livrees = all.filter(l=>l.status==='livree' && l.livreurNom===app.profile.nom);
   const revenus = livrees.length * 500;
+  const estDispo = app.profile.disponible !== false;
+
+  const jours = ['D','L','M','M','J','V','S'];
+  const now = new Date();
+  const parJour = [0,0,0,0,0,0,0];
+  livrees.forEach(l => {
+    const d = new Date(l.createdAt);
+    const diffJours = Math.floor((now - d) / (1000*60*60*24));
+    if(diffJours >= 0 && diffJours < 7) parJour[6-diffJours] += 500;
+  });
+  const maxVal = Math.max(...parJour, 1);
 
   m.innerHTML = `
-    <div class="home-hero fadeUp"><div class="ht">Bonjour ${esc(app.profile.nom.split(' ')[0])} 🛵</div><div class="hs">Zone : ${esc(app.profile.zone)}</div></div>
+    <div class="home-hero fadeUp" style="display:flex;justify-content:space-between;align-items:center;">
+      <div><div class="ht">Bonjour ${esc(app.profile.nom.split(' ')[0])} 🛵</div><div class="hs">Zone : ${esc(app.profile.zone)}</div></div>
+      <div style="display:flex;background:rgba(255,255,255,.15);border-radius:20px;padding:3px;flex-shrink:0;">
+        <button id="toggleDispoOn" style="border:none;border-radius:18px;padding:6px 12px;font-size:10.5px;font-weight:800;cursor:pointer;background:${estDispo?'var(--green)':'transparent'};color:#fff;">🟢 Dispo</button>
+        <button id="toggleDispoOff" style="border:none;border-radius:18px;padding:6px 12px;font-size:10.5px;font-weight:800;cursor:pointer;background:${!estDispo?'#374151':'transparent'};color:#fff;">⚫ Off</button>
+      </div>
+    </div>
     <div class="kpi-grid">
       <div class="kpi hot fadeUp"><div class="kv">${dispo}</div><div class="kl">Missions disponibles</div></div>
       <div class="kpi fadeUp" style="animation-delay:.05s;"><div class="kv">${enCours}</div><div class="kl">En cours</div></div>
       <div class="kpi fadeUp" style="animation-delay:.1s;"><div class="kv">${livrees.length}</div><div class="kl">Livrées</div></div>
       <div class="kpi fadeUp" style="animation-delay:.15s;"><div class="kv">${money(revenus)} F</div><div class="kl">Revenus estimés</div></div>
     </div>
+    <div class="req-card fadeUp">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><div style="font-size:12px;font-weight:800;">Revenus · 7 derniers jours</div><div style="font-size:12px;font-weight:800;color:var(--green);">${money(parJour.reduce((a,b)=>a+b,0))} F</div></div>
+      <div style="display:flex;align-items:flex-end;gap:5px;height:55px;">
+        ${parJour.map((v,i) => `<div style="display:flex;flex-direction:column;align-items:center;flex:1;"><div style="width:100%;background:linear-gradient(135deg,var(--orange),var(--gold));border-radius:4px 4px 0 0;height:${Math.max(4,(v/maxVal)*48)}px;"></div><div style="font-size:9.5px;color:var(--muted);margin-top:2px;">${jours[(now.getDay()-6+i+70)%7]}</div></div>`).join('')}
+      </div>
+    </div>
     <button class="btn-primary" id="goMission">📦 Voir les missions</button>`;
   document.getElementById('goMission').addEventListener('click', () => { app.tab='mission'; renderApp(); });
+  document.getElementById('toggleDispoOn').addEventListener('click', async () => { app.profile.disponible = true; await setDisponibilite('livreur', true); renderLivreurHomeTab(); });
+  document.getElementById('toggleDispoOff').addEventListener('click', async () => { app.profile.disponible = false; await setDisponibilite('livreur', false); renderLivreurHomeTab(); });
 }
 
 /* ================= LIVREUR — MISSION ================= */
@@ -1028,7 +1346,7 @@ async function renderProfileTab(){
     extraHtml = `<div class="sec-lbl">📄 Mes factures (One Invoice)</div>`;
     if(!myOrders.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune facture pour l'instant — elles apparaissent dès votre première commande.</div>`; }
     else myOrders.slice(0,6).forEach((o,i) => {
-      const ref = `AKS-${new Date(o.createdAt).getFullYear()}-${String(o.createdAt).slice(-6)}`;
+      const ref = o.factureNum || `AKS-SN-${new Date(o.createdAt).getFullYear()}-XXX-C2C-${String(o.createdAt).slice(-6)}`;
       extraHtml += `
         <div class="catalog-item" style="align-items:flex-start;">
           <div>
@@ -1096,7 +1414,14 @@ async function renderProfileTab(){
     </div>
     ${statsHtml}
     ${extraHtml}
-    ${profilesHtml}`;
+    ${profilesHtml}
+    <button class="btn-ghost" id="supportBtn" style="border:1.5px solid var(--border);border-radius:11px;margin-top:16px;">💬 Service assistance</button>
+    <button class="btn-ghost" id="logoutBtn" style="color:var(--red);font-weight:700;margin-top:8px;">🚪 Se déconnecter</button>`;
+
+  const supportBtn = document.getElementById('supportBtn');
+  if(supportBtn) supportBtn.addEventListener('click', renderSupportScreen);
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn) logoutBtn.addEventListener('click', logout);
 
   m.querySelectorAll('.switch-role-btn').forEach(btn => btn.addEventListener('click', async () => {
     const r = btn.getAttribute('data-role');
@@ -1152,7 +1477,7 @@ async function sendAIMessage(){
   input.value = '';
 
   const catalogue = await fetchCatalogueAll();
-  const matches = catalogue.filter(c => c.produit.toLowerCase().includes(q.toLowerCase()));
+  const matches = catalogue.filter(c => c.produit.toLowerCase().includes(q.toLowerCase()) && c.stock > 0);
 
   if(matches.length){
     const best = matches.sort((a,b) => Number(a.prix)-Number(b.prix))[0];
