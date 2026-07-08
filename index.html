@@ -20,6 +20,15 @@
   .page-bg{background:transparent !important;}
 
   @keyframes gpulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+  @keyframes ringSpin{to{transform:rotate(360deg);}}
+  .live-ring{position:relative;}
+  .live-ring::before{
+    content:'';position:absolute;inset:-3px;border-radius:13px;padding:3px;
+    background:conic-gradient(from 0deg, var(--ring-c1,#EF4444), var(--ring-c2,#F97316), var(--ring-c1,#EF4444));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    animation:ringSpin 2.2s linear infinite; pointer-events:none;
+  }
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
   .fadeUp{animation:fadeUp .35s ease both;}
 
@@ -248,7 +257,7 @@ async function uploadProductPhoto(file){
 function mapSolicitation(r){ return { id:r.id, clientNom:r.client_nom, zone:r.zone, produit:r.produit, quantite:r.quantite, status:r.status, reponse:r.reponse, createdAt:new Date(r.created_at).getTime() }; }
 function mapOrder(r){ return { id:r.id, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, produit:r.produit, prix:Number(r.prix), status:r.status, factureNum:r.facture_num, ledgerId:r.ledger_id, createdAt:new Date(r.created_at).getTime() }; }
 function mapLivraison(r){ return { id:r.id, produit:r.produit, clientNom:r.client_nom, clientZone:r.client_zone, vendeurNom:r.vendeur_nom, vendeurZone:r.vendeur_zone, prix:Number(r.prix), status:r.status, livreurNom:r.livreur_nom, createdAt:new Date(r.created_at).getTime() }; }
-function mapBazar(r){ return { id:r.id, titre:r.titre, prix:Number(r.prix), type:r.type||'vendre', auteur:r.auteur, zone:r.zone, createdAt:new Date(r.created_at).getTime() }; }
+function mapBazar(r){ return { id:r.id, titre:r.titre, prix:Number(r.prix), type:r.type||'vendre', photoUrl:r.photo_url||null, auteur:r.auteur, zone:r.zone, createdAt:new Date(r.created_at).getTime() }; }
 
 async function fetchCatalogueAll(){ return (await fetchAll('app_catalogue')).map(mapCatalogue); }
 async function insertCatalogue(item){ const { error } = await sbClient.from('app_catalogue').insert({ id:item.id, vendeur_nom:item.vendeurNom, zone:item.zone, produit:item.produit, prix:item.prix, stock:item.stock, photo_url:item.photoUrl||null }); if(error){ console.error(error); notifyOfflineMode('db'); } }
@@ -278,7 +287,15 @@ async function updateLivraison(id, patch){
 }
 
 async function fetchBazarAll(){ return (await fetchAll('app_bazar')).map(mapBazar); }
-async function insertBazar(item){ const { error } = await sbClient.from('app_bazar').insert({ id:item.id, titre:item.titre, prix:item.prix, type:item.type, auteur:item.auteur, zone:item.zone }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function insertBazar(item){ const { error } = await sbClient.from('app_bazar').insert({ id:item.id, titre:item.titre, prix:item.prix, type:item.type, photo_url:item.photoUrl||null, auteur:item.auteur, zone:item.zone }); if(error){ console.error(error); notifyOfflineMode('db'); } }
+async function updateBazar(id, patch){
+  const dbPatch = {};
+  if('titre' in patch) dbPatch.titre = patch.titre;
+  if('prix' in patch) dbPatch.prix = patch.prix;
+  if('photoUrl' in patch) dbPatch.photo_url = patch.photoUrl;
+  const { error } = await sbClient.from('app_bazar').update(dbPatch).eq('id', id);
+  if(error){ console.error(error); notifyOfflineMode('db'); }
+}
 
 /* ---- profils réels (une ligne par rôle, par utilisateur) ---- */
 async function getMyProfile(role){
@@ -602,7 +619,7 @@ async function renderHeader(){
       <div id="topRek" style="grid-column:3;grid-row:1;background:rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;font-weight:800;color:#fff;">Rék</div>
       <div id="topAvatar" style="grid-column:1;grid-row:2;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;cursor:pointer;">${initials}</div>
       <div style="grid-column:3;grid-row:2;display:flex;gap:4px;justify-content:center;align-items:center;">
-        ${app.role==='client' ? `<div id="topCart" style="position:relative;width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">🛒</div>` : ''}
+        ${app.role==='client' ? `<div id="topCart" style="position:relative;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--orange),var(--orange2));box-shadow:0 3px 8px rgba(232,67,26,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">🛒</div>` : ''}
         <div id="topBell" style="position:relative;width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;">🔔<span id="bellBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--red);color:#fff;font-size:8px;font-weight:800;width:14px;height:14px;border-radius:50%;align-items:center;justify-content:center;"></span></div>
       </div>
     </div>`;
@@ -640,6 +657,14 @@ async function loadTrendAndBadges(){
       pending.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
       const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
       icon.textContent = '🔎';
+      const canvasEl = document.getElementById('topCanvas');
+      if(pending.length){
+        canvasEl.classList.add('live-ring');
+        canvasEl.style.setProperty('--ring-c1', '#EF4444');
+        canvasEl.style.setProperty('--ring-c2', '#F97316');
+      } else {
+        canvasEl.classList.remove('live-ring');
+      }
       if(sorted.length){
         t1.textContent = `${pending.length} produit${pending.length>1?'s':''} recherché${pending.length>1?'s':''} non trouvé${pending.length>1?'s':''}`;
         t2.textContent = `dont « ${sorted[0][0]} » (${sorted[0][1]}×) — voir tout →`;
@@ -656,9 +681,11 @@ async function loadTrendAndBadges(){
 
   let badgeCount = 0;
   if(app.role === 'client'){
-    badgeCount = sol.filter(s => s.clientNom===app.profile.nom && s.status==='en_attente').length;
+    const livs = await fetchLivraisonsAll();
+    badgeCount = livs.filter(l => l.clientNom===app.profile.nom && l.status !== 'livree').length;
   } else if(app.role === 'vendeur'){
-    badgeCount = sol.filter(s=>s.status==='en_attente').length;
+    const orders = await fetchOrdersAll();
+    badgeCount = orders.filter(o => o.vendeurNom===app.profile.nom && o.status==='nouvelle').length;
   } else {
     const livs = await fetchLivraisonsAll();
     badgeCount = livs.filter(l=>l.status==='a_livrer').length;
@@ -780,7 +807,7 @@ function renderApp(){
 /* ================= VENDEUR — FIL DES DEMANDES NON SATISFAITES (défilement vertical) ================= */
 async function renderDemandesFeedTab(){
   const m = document.getElementById('main');
-  m.style.padding = '0';
+  m.style.padding = '54px 0 30px';
   m.innerHTML = `<div class="empty" style="padding:60px 20px;">Chargement…</div>`;
   const sol = await fetchSolicitationsAll();
   const pending = sol.filter(s => s.status==='en_attente').sort((a,b)=>b.createdAt-a.createdAt);
@@ -788,10 +815,11 @@ async function renderDemandesFeedTab(){
   const counts = {};
   pending.forEach(s => { counts[s.produit] = (counts[s.produit]||0) + 1; });
 
+  const backBtn = `<button id="feedBack" style="position:fixed;top:14px;left:14px;z-index:10;background:rgba(0,0,0,.4);border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">← Retour</button>`;
+
   if(!pending.length){
-    m.innerHTML = `
-      <div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
-        <button id="feedBack" style="position:absolute;top:16px;left:16px;background:rgba(0,0,0,.3);border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">← Retour</button>
+    m.innerHTML = `${backBtn}
+      <div style="min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
         <span style="font-size:36px;margin-bottom:10px;">🔎</span>
         <div style="font-weight:800;font-size:14px;">Aucune demande non satisfaite pour l'instant</div>
       </div>`;
@@ -799,25 +827,23 @@ async function renderDemandesFeedTab(){
     return;
   }
 
-  let html = `<div style="scroll-snap-type:y mandatory;overflow-y:auto;height:100vh;">`;
+  let html = backBtn + `<div style="background:linear-gradient(180deg,#1E3A5F,#0F1720);color:#fff;">`;
   pending.forEach((s,i) => {
     const count = counts[s.produit];
     html += `
-      <div style="scroll-snap-align:start;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#1E3A5F,#0F1720);color:#fff;position:relative;">
-        ${i===0 ? `<button id="feedBack" style="position:absolute;top:16px;left:16px;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:20px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;">← Retour</button>` : ''}
-        <div style="position:absolute;top:16px;right:16px;font-size:11px;color:rgba(255,255,255,.5);">${i+1} / ${pending.length}</div>
-        <span style="font-size:44px;margin-bottom:16px;">🔎</span>
-        <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:24px;text-align:center;">${esc(s.produit)}</div>
-        <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:8px;">Demandé ${count} fois · ${esc(s.zone)}</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;">${new Date(s.createdAt).toLocaleDateString('fr-FR')}</div>
-        <button class="add-from-feed-btn" data-produit="${esc(s.produit)}" style="margin-top:26px;background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;padding:13px 26px;border-radius:30px;font-weight:800;font-size:13px;cursor:pointer;">➕ Ajouter ce produit à mon catalogue</button>
-        <div style="margin-top:14px;font-size:10.5px;color:rgba(255,255,255,.4);">↓ Glissez pour voir la suite</div>
+      <div style="padding:18px 20px;${i>0?'border-top:1px solid rgba(255,255,255,.1);':''}display:flex;align-items:center;gap:14px;">
+        <span style="font-size:26px;flex-shrink:0;">🔎</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:15px;">${esc(s.produit)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px;">Demandé ${count} fois · ${esc(s.zone)} · ${new Date(s.createdAt).toLocaleDateString('fr-FR')}</div>
+        </div>
+        <button class="add-from-feed-btn" data-produit="${esc(s.produit)}" style="flex-shrink:0;background:linear-gradient(135deg,var(--orange),var(--orange2));border:none;color:#fff;padding:9px 14px;border-radius:20px;font-weight:700;font-size:11px;cursor:pointer;">➕ Ajouter</button>
       </div>`;
   });
   html += `</div>`;
   m.innerHTML = html;
 
-  document.getElementById('feedBack').addEventListener('click', () => { app.tab='dashboard'; renderApp(); m.style.padding=''; });
+  document.getElementById('feedBack').addEventListener('click', () => { app.tab='dashboard'; renderApp(); });
   m.querySelectorAll('.add-from-feed-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       app.tab = 'produits';
@@ -831,12 +857,15 @@ async function renderDemandesFeedTab(){
 }
 
 /* ================= BAZAR (C2C, accessible à tous les rôles) ================= */
+let pendingBazarPhoto = null;
+
 async function renderBazarTab(){
   const m = document.getElementById('main');
   m.innerHTML = `<div class="empty">Chargement…</div>`;
   const all = await fetchBazarAll();
   const zoneItems = all.filter(b => b.zone.toLowerCase()===app.profile.zone.toLowerCase()).sort((a,b)=>b.createdAt-a.createdAt);
   const typeLabels = { vendre:{l:'Vendre',c:'var(--blue)',i:'💰'}, echanger:{l:'Échanger',c:'var(--green)',i:'🔄'}, donner:{l:'Donner',c:'var(--purple)',i:'🎁'} };
+  pendingBazarPhoto = null;
 
   let html = `
     <button id="bazarBack" style="background:none;border:none;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;">← Retour</button>
@@ -845,6 +874,11 @@ async function renderBazarTab(){
       <button class="bazar-type-btn on" data-type="vendre" style="flex:1;border:1.5px solid var(--blue);background:var(--blue);color:#fff;border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">💰 Vendre</button>
       <button class="bazar-type-btn" data-type="echanger" style="flex:1;border:1.5px solid var(--border);background:#fff;color:var(--ink);border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">🔄 Échanger</button>
       <button class="bazar-type-btn" data-type="donner" style="flex:1;border:1.5px solid var(--border);background:#fff;color:var(--ink);border-radius:10px;padding:9px 4px;font-size:11.5px;font-weight:700;cursor:pointer;">🎁 Donner</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+      <label for="bazarPhoto" id="bazarPhotoBox" style="width:52px;height:52px;border-radius:12px;border:1.5px dashed var(--border);background:var(--page);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0;overflow:hidden;">📷</label>
+      <input type="file" id="bazarPhoto" accept="image/*" style="display:none;">
+      <div style="font-size:10.5px;color:var(--muted);">Ajoutez une photo — appareil photo ou galerie</div>
     </div>
     <div class="add-form" style="flex-wrap:wrap;">
       <input id="bazarTitre" placeholder="Ex. iPhone 12, canapé...">
@@ -860,10 +894,14 @@ async function renderBazarTab(){
   } else {
     zoneItems.forEach((b,i) => {
       const t = typeLabels[b.type] || typeLabels.vendre;
+      const isMine = b.auteur === app.profile.nom;
       html += `
-        <div class="catalog-item fadeUp" style="animation-delay:${i*.04}s;">
-          <div><div class="cn">${t.i} ${esc(b.titre)}</div><div class="cz">${esc(b.auteur)} · ${esc(b.zone)}</div></div>
-          <div class="cp" style="color:${t.c};">${b.type==='donner' ? 'Gratuit' : money(b.prix)+' F'}</div>
+        <div class="catalog-item bazar-item fadeUp" data-id="${b.id}" style="animation-delay:${i*.04}s;cursor:${isMine?'pointer':'default'};">
+          <div style="display:flex;gap:10px;align-items:center;flex:1;">
+            ${b.photoUrl ? `<img src="${b.photoUrl}" style="width:44px;height:44px;border-radius:9px;object-fit:cover;flex-shrink:0;">` : `<div style="width:44px;height:44px;border-radius:9px;background:var(--page);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${t.i}</div>`}
+            <div><div class="cn">${esc(b.titre)} ${isMine?'✏️':''}</div><div class="cz">${esc(b.auteur)} · ${esc(b.zone)}</div></div>
+          </div>
+          <div class="cp" style="color:${t.c};">${b.type==='donner' ? 'Gratuit' : (b.prix>0 ? money(b.prix)+' F' : 'Prix à définir')}</div>
         </div>`;
     });
   }
@@ -884,18 +922,76 @@ async function renderBazarTab(){
     });
   });
 
+  document.getElementById('bazarPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    pendingBazarPhoto = file;
+    document.getElementById('bazarPhotoBox').innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%;height:100%;object-fit:cover;">`;
+  });
+
   document.getElementById('bazarBack').addEventListener('click', () => {
     app.tab = app.role==='client' ? 'home' : (app.role==='vendeur' ? 'dashboard' : 'rhome');
     renderApp();
   });
+
+  m.querySelectorAll('.bazar-item[data-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      const b = zoneItems.find(x => x.id === card.getAttribute('data-id'));
+      if(b && b.auteur === app.profile.nom) renderBazarEditScreen(b);
+    });
+  });
+
   document.getElementById('bazarAddBtn').addEventListener('click', async () => {
     const titre = document.getElementById('bazarTitre').value.trim();
     const prix = selectedType==='donner' ? 0 : (document.getElementById('bazarPrix').value || 0);
     const err = document.getElementById('bazarErr');
     if(!titre){ err.textContent = 'Écrivez un titre avant de publier.'; return; }
     err.textContent = '';
-    await insertBazar({ id:uid(), titre, prix, type:selectedType, auteur:app.profile.nom, zone:app.profile.zone });
+    const btn = document.getElementById('bazarAddBtn');
+    btn.disabled = true; btn.textContent = '...';
+    let photoUrl = null;
+    if(pendingBazarPhoto){ photoUrl = await uploadProductPhoto(pendingBazarPhoto); }
+    await insertBazar({ id:uid(), titre, prix, type:selectedType, photoUrl, auteur:app.profile.nom, zone:app.profile.zone });
     renderBazarTab();
+  });
+}
+
+async function renderBazarEditScreen(b){
+  const m = document.getElementById('main');
+  const typeLabels = { vendre:{l:'Vendre',i:'💰'}, echanger:{l:'Échanger',i:'🔄'}, donner:{l:'Donner',i:'🎁'} };
+  const t = typeLabels[b.type] || typeLabels.vendre;
+  m.innerHTML = `
+    <button id="editBack" style="background:none;border:none;color:var(--navy);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;">← Retour au Bazar</button>
+    <div class="sec-lbl">${t.i} Modifier mon annonce (${t.l})</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <label for="editPhoto" id="editPhotoBox" style="width:64px;height:64px;border-radius:14px;border:1.5px dashed var(--border);background:var(--page);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;overflow:hidden;flex-shrink:0;">${b.photoUrl ? `<img src="${b.photoUrl}" style="width:100%;height:100%;object-fit:cover;">` : '📷'}</label>
+      <input type="file" id="editPhoto" accept="image/*" style="display:none;">
+      <div style="font-size:10.5px;color:var(--muted);">Touchez pour changer la photo</div>
+    </div>
+    <div class="field"><label>Titre</label><input id="editTitre" value="${esc(b.titre)}" style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;"></div>
+    ${b.type !== 'donner' ? `<div class="field"><label>Prix (FCFA)</label><input id="editPrix" type="number" value="${b.prix||''}" style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:14px;font-family:inherit;"></div>` : ''}
+    <div id="editStatus" style="font-size:11px;color:var(--green);margin-bottom:8px;min-height:14px;"></div>
+    <button class="btn-primary" id="editSave">Enregistrer les modifications</button>`;
+
+  let pendingEditPhoto = null;
+  document.getElementById('editPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    pendingEditPhoto = file;
+    document.getElementById('editPhotoBox').innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%;height:100%;object-fit:cover;">`;
+  });
+  document.getElementById('editBack').addEventListener('click', () => renderBazarTab());
+  document.getElementById('editSave').addEventListener('click', async () => {
+    const titre = document.getElementById('editTitre').value.trim();
+    const prixInput = document.getElementById('editPrix');
+    const prix = prixInput ? Number(prixInput.value || 0) : 0;
+    const status = document.getElementById('editStatus');
+    if(!titre){ status.style.color='var(--red)'; status.textContent='Le titre ne peut pas être vide.'; return; }
+    const patch = { titre, prix };
+    if(pendingEditPhoto){ patch.photoUrl = await uploadProductPhoto(pendingEditPhoto); }
+    await updateBazar(b.id, patch);
+    status.style.color='var(--green)'; status.textContent='✅ Annonce mise à jour.';
+    setTimeout(() => renderBazarTab(), 700);
   });
 }
 
@@ -905,17 +1001,12 @@ async function renderHomeTab(){
   m.innerHTML = `<div class="empty">Chargement…</div>`;
   const catalogue = await fetchCatalogueAll();
   const local = catalogue.filter(c => c.zone.toLowerCase()===app.profile.zone.toLowerCase()).slice(-4).reverse();
-  const allSol = await fetchSolicitationsAll();
-  const enAttente = allSol.filter(s => s.clientNom===app.profile.nom && s.status==='en_attente').length;
 
   let html = `
     <div class="home-hero fadeUp">
       <div class="ht">Bonjour ${esc(app.profile.nom.split(' ')[0])} 👋</div>
       <div class="hs">Aksina surveille votre zone (${esc(app.profile.zone)}) pour vous trouver la meilleure offre, où qu'elle soit.</div>
     </div>`;
-  if(enAttente > 0){
-    html += `<div class="req-card fadeUp" style="border-color:rgba(232,67,26,.3);"><div class="status-line"><div class="status-dot wait"></div><div class="status-txt">${enAttente} demande${enAttente>1?'s':''} en attente d'un vendeur</div></div></div>`;
-  }
   html += `
     <div class="sec-lbl" style="margin-top:16px;">Disponible près de vous</div>`;
   if(!local.length){
@@ -1119,16 +1210,20 @@ async function renderDashboardTab(){
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi fadeUp"><div class="kv">${actifs}</div><div class="kl">Produits actifs</div></div>
-      <div class="kpi ${rupture>0?'hot':''} fadeUp" style="animation-delay:.05s;"><div class="kv">${rupture}</div><div class="kl">En rupture</div></div>
-      <div class="kpi hot fadeUp" style="animation-delay:.1s;"><div class="kv">${pending}</div><div class="kl">Demandes en attente</div></div>
-      <div class="kpi fadeUp" style="animation-delay:.15s;"><div class="kv">${myOrders.reduce((s,o)=>s+Number(o.prix),0).toLocaleString('fr-FR')} F</div><div class="kl">Chiffre d'affaires</div></div>
+      <div class="kpi fadeUp kpi-link" data-goto="produits"><div class="kv">${actifs}</div><div class="kl">Produits actifs</div></div>
+      <div class="kpi ${rupture>0?'hot':''} fadeUp kpi-link" data-goto="produits" style="animation-delay:.05s;"><div class="kv">${rupture}</div><div class="kl">En rupture</div></div>
+      <div class="kpi hot fadeUp kpi-link" data-goto="commandes" style="animation-delay:.1s;"><div class="kv">${pending}</div><div class="kl">Demandes en attente</div></div>
+      <div class="kpi fadeUp kpi-link" data-goto="commandes" style="animation-delay:.15s;"><div class="kv">${myOrders.reduce((s,o)=>s+Number(o.prix),0).toLocaleString('fr-FR')} F</div><div class="kl">Chiffre d'affaires</div></div>
     </div>
     <div class="sec-lbl">Accès rapide</div>
     <button class="btn-primary" id="goCommandes" style="margin-bottom:10px;">📦 Voir les commandes et demandes</button>
     <button class="btn-primary" id="goProduits" style="background:linear-gradient(135deg,var(--navy),var(--blue));">➕ Gérer mes produits</button>`;
   document.getElementById('goCommandes').addEventListener('click', () => { app.tab='commandes'; renderApp(); });
   document.getElementById('goProduits').addEventListener('click', () => { app.tab='produits'; renderApp(); });
+  m.querySelectorAll('.kpi-link').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => { app.tab = el.getAttribute('data-goto'); renderApp(); });
+  });
 }
 
 /* ================= VENDEUR — COMMANDES ================= */
@@ -1198,7 +1293,7 @@ async function renderProduitsTab(){
     <div class="sec-lbl">Ajouter un produit</div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
       <label for="newPhoto" style="width:52px;height:52px;border-radius:12px;border:1.5px dashed var(--border);background:var(--page);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0;overflow:hidden;" id="photoPreviewBox">📷</label>
-      <input type="file" id="newPhoto" accept="image/*" capture="environment" style="display:none;">
+      <input type="file" id="newPhoto" accept="image/*" style="display:none;">
       <div style="font-size:10.5px;color:var(--muted);">Prenez ou choisissez une photo du produit (optionnel)</div>
     </div>
     <div class="add-form"><input id="newProduit" placeholder="Produit (ex. riz brisé)"><input id="newPrix" type="number" placeholder="Prix" style="max-width:75px;"><input id="newStock" type="number" placeholder="Stock" style="max-width:65px;"><button id="addProduitBtn">+</button></div>`;
@@ -1391,19 +1486,30 @@ async function renderProfileTab(){
   let statsHtml = '', successCount = 0, extraHtml = '';
 
   if(app.role === 'client'){
-    const all = await fetchSolicitationsAll();
-    const mine = all.filter(s=>s.clientNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
-    const resolved = mine.filter(s=>s.status==='repondu');
-    successCount = resolved.length;
-    const totalDepense = resolved.reduce((s,r)=>s+Number(r.reponse.prix),0);
-    statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Demandes</div></div><div class="pstat"><div class="num">${resolved.length}</div><div class="lbl">Résolues</div></div><div class="pstat"><div class="num">${money(totalDepense)} F</div><div class="lbl">Dépensé</div></div></div>`;
+    const orders = await fetchOrdersAll();
+    const mine = orders.filter(o=>o.clientNom===app.profile.nom).sort((a,b)=>b.createdAt-a.createdAt);
+    successCount = mine.length;
+    const totalDepense = mine.reduce((s,o)=>s+Number(o.prix),0);
+    statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Achats</div></div><div class="pstat"><div class="num">${money(totalDepense)} F</div><div class="lbl">Total dépensé</div></div></div>`;
 
-    const recent = mine.slice(0,4);
-    extraHtml = `<div class="sec-lbl">Mes dernières demandes</div>`;
-    if(!recent.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune demande pour l'instant.</div>`; }
-    else recent.forEach(s => {
-      extraHtml += `<div class="catalog-item"><div><div class="cn">${esc(s.produit)}</div><div class="cz">${s.status==='repondu' ? '✅ Résolue' : '⏳ En attente'}</div></div>${s.status==='repondu' ? `<div class="cp">${money(s.reponse.prix)} F</div>` : ''}</div>`;
-    });
+    extraHtml = `<div class="sec-lbl">📁 Mes achats</div>`;
+    if(!mine.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucun achat pour l'instant.</div>`; }
+    else {
+      const parAnnee = {};
+      mine.forEach(o => { const y = new Date(o.createdAt).getFullYear(); (parAnnee[y] = parAnnee[y]||[]).push(o); });
+      Object.keys(parAnnee).sort((a,b)=>b-a).forEach(annee => {
+        const liste = parAnnee[annee];
+        extraHtml += `
+          <details style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;">
+            <summary style="padding:12px 14px;font-weight:800;font-size:13px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+              <span>📂 ${annee}</span><span style="font-size:11px;color:var(--muted);font-weight:600;">${liste.length} achat${liste.length>1?'s':''}</span>
+            </summary>
+            <div style="padding:0 12px 10px;">
+              ${liste.map(o => `<div class="catalog-item"><div><div class="cn">${esc(o.produit)}</div><div class="cz">${esc(o.vendeurNom)} · ${new Date(o.createdAt).toLocaleDateString('fr-FR')}</div></div><div class="cp">${money(o.prix)} F</div></div>`).join('')}
+            </div>
+          </details>`;
+      });
+    }
 
   } else if(app.role === 'vendeur'){
     const catalogue = await fetchCatalogueAll();
@@ -1414,19 +1520,36 @@ async function renderProfileTab(){
     const ca = myOrders.reduce((s,o)=>s+Number(o.prix),0);
     statsHtml = `<div class="profile-stats"><div class="pstat"><div class="num">${mine.length}</div><div class="lbl">Produits</div></div><div class="pstat"><div class="num">${myOrders.length}</div><div class="lbl">Commandes</div></div><div class="pstat"><div class="num">${money(ca)} F</div><div class="lbl">CA total</div></div></div>`;
 
-    extraHtml = `<div class="sec-lbl">📄 Mes factures (One Invoice)</div>`;
+    extraHtml = `<div class="sec-lbl">📁 Mes factures (One Invoice)</div>`;
     if(!myOrders.length){ extraHtml += `<div class="empty" style="padding:20px;">Aucune facture pour l'instant — elles apparaissent dès votre première commande.</div>`; }
-    else myOrders.slice(0,6).forEach((o,i) => {
-      const ref = o.factureNum || `AKS-SN-${new Date(o.createdAt).getFullYear()}-XXX-C2C-${String(o.createdAt).slice(-6)}`;
-      extraHtml += `
-        <div class="catalog-item" style="align-items:flex-start;">
-          <div>
-            <div class="cn" style="font-family:monospace;font-size:11px;">${ref}</div>
-            <div class="cz">${esc(o.produit)} · ${esc(o.clientNom)} · ${new Date(o.createdAt).toLocaleDateString('fr-FR')}</div>
-          </div>
-          <div class="cp">${money(o.prix)} F</div>
-        </div>`;
-    });
+    else {
+      extraHtml += `<input id="factureSearch" placeholder="Rechercher par produit ou n° de facture..." style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:11px;font-size:12.5px;font-family:inherit;margin-bottom:10px;background:#fff;">`;
+      const parAnnee = {};
+      myOrders.forEach(o => {
+        o.factureNum = o.factureNum || `AKS-SN-${new Date(o.createdAt).getFullYear()}-XXX-C2C-${String(o.createdAt).slice(-6)}`;
+        const y = new Date(o.createdAt).getFullYear();
+        (parAnnee[y] = parAnnee[y]||[]).push(o);
+      });
+      Object.keys(parAnnee).sort((a,b)=>b-a).forEach((annee,idx) => {
+        const liste = parAnnee[annee];
+        extraHtml += `
+          <details class="facture-annee" ${idx===0?'open':''} style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;">
+            <summary style="padding:12px 14px;font-weight:800;font-size:13px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;">
+              <span>📂 ${annee}</span><span style="font-size:11px;color:var(--muted);font-weight:600;">${liste.length} facture${liste.length>1?'s':''}</span>
+            </summary>
+            <div style="padding:0 12px 10px;">
+              ${liste.map(o => `
+                <div class="catalog-item facture-item" data-search="${esc(o.produit.toLowerCase())} ${esc(o.factureNum.toLowerCase())}" style="align-items:flex-start;">
+                  <div>
+                    <div class="cn" style="font-family:monospace;font-size:10.5px;">${o.factureNum}</div>
+                    <div class="cz">${esc(o.produit)} · ${esc(o.clientNom)} · ${new Date(o.createdAt).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div class="cp">${money(o.prix)} F</div>
+                </div>`).join('')}
+            </div>
+          </details>`;
+      });
+    }
 
   } else {
     const livs = await fetchLivraisonsAll();
@@ -1488,6 +1611,16 @@ async function renderProfileTab(){
   const supportBtn = document.getElementById('supportBtn');
   if(supportBtn) supportBtn.addEventListener('click', renderSupportScreen);
   const logoutBtn = document.getElementById('logoutBtn');
+  const factureSearch = document.getElementById('factureSearch');
+  if(factureSearch){
+    factureSearch.addEventListener('input', () => {
+      const q = factureSearch.value.trim().toLowerCase();
+      document.querySelectorAll('.facture-item').forEach(item => {
+        item.style.display = item.getAttribute('data-search').includes(q) ? '' : 'none';
+      });
+      document.querySelectorAll('.facture-annee').forEach(det => { if(q) det.open = true; });
+    });
+  }
   if(logoutBtn) logoutBtn.addEventListener('click', logout);
 
   m.querySelectorAll('.switch-role-btn').forEach(btn => btn.addEventListener('click', async () => {
